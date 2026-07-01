@@ -1,0 +1,10 @@
+{
+  "name": "silver-slv-trading-terminal",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node local_app/server.mjs",
+    "dev": "node local_app/server.mjs"
+  }
+}
