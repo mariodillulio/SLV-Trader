@@ -1,0 +1,51 @@
+{
+  "inputs": {
+    "silverSpot": "",
+    "silverFutures": "",
+    "slvPrice": 27.1,
+    "priorSlvClose": 26.85,
+    "slvPremarket": 27,
+    "slvVolume": 18500000,
+    "avgSlvVolume": 22000000,
+    "vwap": 27.05,
+    "openingRangeHigh": 27.25,
+    "openingRangeLow": 26.92,
+    "dayHigh": 27.34,
+    "dayLow": 26.88,
+    "atr": 0.85,
+    "silverToSlvRatio": 0.905,
+    "optionStrike": 28,
+    "optionExpiration": "2026-07-03",
+    "optionType": "C",
+    "optionSymbol": "",
+    "optionEntry": 0.75,
+    "contracts": 10,
+    "optionBid": 0.82,
+    "optionAsk": 0.9,
+    "timeValueFactor": 0.35,
+    "notes": "Old fixed trigger levels are notes only, not required signals."
+  },
+  "config": {
+    "provider": "MANUAL",
+    "authMode": "session-or-oauth",
+    "symbols": ["SLV", "/SI"],
+    "tastytradeEnvironment": "production",
+    "tastytradeAccountNumber": "",
+    "autoUpdateEnabled": true,
+    "expectedSilverMin": 45,
+    "expectedSilverMax": 75,
+    "optionChainRefreshSeconds": 300,
+    "selectedOptionSymbol": ""
+  },
+  "optionChain": {
+    "underlying": "SLV",
+    "source": "not loaded",
+    "endpoint": null,
+    "fetchedAt": null,
+    "status": "Not loaded",
+    "error": null,
+    "expirations": [],
+    "options": []
+  },
+  "log": []
+}
