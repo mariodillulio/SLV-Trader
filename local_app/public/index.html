@@ -1,0 +1,1984 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Silver / SLV Play Finder</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #070a10;
+      --panel: #0f1724;
+      --panel-2: #111c2b;
+      --line: #273449;
+      --text: #e7eef8;
+      --muted: #93a4bb;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #facc15;
+      --cyan: #67e8f9;
+      --blue: #60a5fa;
+      --orange: #fb923c;
+    }
+    * { box-sizing: border-box; }
+    html, body { overflow-x: hidden; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    header { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 14px; background: rgba(7, 10, 16, .96); border-bottom: 1px solid var(--line); backdrop-filter: blur(10px); }
+    h1 { margin: 0; font-size: clamp(20px, 2vw, 30px); letter-spacing: 0; line-height: 1; }
+    h2 { margin: 0 0 9px; color: var(--yellow); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+    button, select, input { min-height: 32px; border-radius: 6px; border: 1px solid var(--line); background: #111b2a; color: var(--text); font-weight: 760; }
+    button { padding: 7px 10px; cursor: pointer; }
+    button:hover { background: #1b2a40; }
+    button:disabled { opacity: .55; cursor: wait; }
+    select, input { width: 100%; padding: 7px 8px; font-weight: 650; }
+    main { width: 100%; max-width: 2200px; margin: 0 auto; padding: 10px; }
+    .toolbar, .topline, .button-row { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+    .toolbar { justify-content: flex-end; }
+    .topline { margin-top: 6px; color: var(--muted); font-size: 12px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; background: #0d1522; font-variant-numeric: tabular-nums; }
+    .dot { width: 9px; height: 9px; border-radius: 99px; background: var(--red); box-shadow: 0 0 10px currentColor; }
+    .dot.good { background: var(--green); }
+    .dot.warn { background: var(--yellow); }
+    .cockpit { display: grid; gap: 10px; }
+    .desk-primary { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 10px; align-items: stretch; }
+    .desk-primary > .map-card { grid-column: 1 / -1; order: 1; }
+    .desk-primary > .market-card { grid-column: span 3; order: 2; }
+    .desk-primary > .command-card { grid-column: span 3; order: 3; }
+    .desk-primary > .mission-card { grid-column: span 6; order: 4; }
+    .desk-context { display: grid; grid-template-columns: minmax(420px, 1.05fr) minmax(380px, .95fr); gap: 10px; align-items: stretch; }
+    .desk-support { display: grid; grid-template-columns: minmax(420px, 1.2fr) minmax(320px, .8fr); gap: 10px; align-items: stretch; }
+    .desk-support .why-card { grid-column: 1 / -1; }
+    .desk-planning { display: grid; grid-template-columns: minmax(310px, 1.1fr) minmax(260px, .82fr) minmax(260px, .9fr) minmax(300px, 1fr); gap: 10px; align-items: stretch; }
+    .reference-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; align-items: stretch; }
+    .trade-plan-card { order: 1; }
+    .trade-score-card { order: 2; }
+    .odds-card { order: 3; }
+    .selected-contract-card { order: 4; }
+    .row-2 { display: grid; grid-template-columns: 1.25fr 1fr 1fr .95fr; gap: 10px; align-items: stretch; }
+    .section-block { display: grid; gap: 10px; border: 1px solid rgba(39,52,73,.72); border-radius: 8px; padding: 10px; background: rgba(17,28,43,.28); }
+    .section-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px solid rgba(39,52,73,.55); padding-bottom: 8px; }
+    .section-heading h2 { margin: 0; color: var(--cyan); font-size: 14px; letter-spacing: .06em; }
+    .section-heading .sub { margin: 0; text-align: right; }
+    .position-row { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .planning-row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 10px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-height: 118px; min-width: 0; }
+    .compact { min-height: 0; }
+    .market-card, .command-card, .mission-card, .best-contract-card, .planning-read-card { min-height: 218px; }
+    .map-card { min-height: 0; }
+    .planning-row > .best-contract-card { grid-column: span 4; order: 1; }
+    .planning-row > .trade-plan-card { grid-column: span 4; order: 2; }
+    .planning-row > .selected-contract-card { grid-column: span 4; order: 3; }
+    .planning-row > .trade-score-card { grid-column: span 4; order: 4; }
+    .planning-row > .odds-card { grid-column: span 4; order: 5; }
+    .planning-row > .planning-read-card { grid-column: span 4; order: 6; }
+    .best-contract-card .metric-grid { grid-template-columns: 1fr; }
+    .best-contract-card .metric strong { font-size: clamp(16px, 1.45vw, 24px); line-height: 1.12; }
+    .plan-scope { margin: 0 0 9px; color: var(--muted); font-size: 12px; line-height: 1.3; }
+    .assumption-banner { border: 1px solid rgba(103,232,249,.28); border-radius: 7px; background: rgba(103,232,249,.08); color: var(--text); padding: 8px; font-size: 12px; line-height: 1.32; margin: 8px 0; }
+    .planning-control-grid { display: grid; grid-template-columns: minmax(90px, .8fr) 1fr; gap: 8px; align-items: end; margin: 8px 0; }
+    .planning-control-grid label { display: block; color: var(--muted); font-size: 11px; }
+    .planning-control-grid input { width: 100%; margin-top: 4px; }
+    .planning-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 8px; }
+    .micro-heading { margin: 10px 0 5px; color: var(--cyan); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    .model-note { color: var(--muted); font-size: 11px; line-height: 1.25; margin-top: 7px; }
+    .selected-contract-card .metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .decision-pill { display: inline-flex; align-items: center; justify-content: center; min-width: 78px; border-radius: 999px; padding: 4px 8px; font-size: 11px; font-weight: 950; letter-spacing: .04em; border: 1px solid var(--line); }
+    .decision-pill.buy, .decision-pill.best, .decision-pill.good { color: var(--green); background: rgba(34,197,94,.12); }
+    .decision-pill.wait { color: var(--yellow); background: rgba(250,204,21,.12); }
+    .decision-pill.avoid, .decision-pill.exit { color: var(--red); background: rgba(239,68,68,.12); }
+    .decision-pill.trim { color: var(--cyan); background: rgba(103,232,249,.10); }
+    .action-label { font-size: clamp(42px, 4.8vw, 68px); line-height: .9; font-weight: 950; letter-spacing: 0; overflow-wrap: anywhere; }
+    .action-label.take-profit-label { font-size: clamp(30px, 3.2vw, 48px); line-height: .95; }
+    .bullish { color: var(--green); }
+    .bearish { color: var(--red); }
+    .neutral { color: var(--yellow); }
+    .avoid { color: #fb7185; }
+    .reason { margin-top: 8px; color: var(--text); font-size: 14px; line-height: 1.35; }
+    .metric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 10px; min-width: 0; }
+    .command-card .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mission-card .metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .mission-detail-grid { display: grid; grid-template-columns: minmax(220px, .95fr) minmax(240px, 1.05fr); gap: 8px; margin-top: 10px; min-width: 0; }
+    .mission-panel { border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); padding: 9px; min-width: 0; }
+    .mission-panel h3 { margin: 0 0 8px; color: var(--cyan); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    .mission-panel .kv { grid-template-columns: minmax(92px, .8fr) minmax(86px, 1.2fr); gap: 5px 9px; }
+    .mission-panel .reason { margin-top: 0; }
+    .mission-panel .sub { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(39,52,73,.58); }
+    .metric, .summary-item { border: 1px solid var(--line); border-radius: 7px; padding: 8px; background: var(--panel-2); min-width: 0; }
+    .metric span, .summary-item span { display: block; color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+    .metric strong, .summary-item strong { display: block; font-size: clamp(17px, 1.65vw, 26px); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; line-height: 1.08; }
+    .kv { display: grid; grid-template-columns: minmax(98px, 1fr) minmax(82px, 1fr); gap: 6px 10px; align-items: baseline; font-variant-numeric: tabular-nums; min-width: 0; }
+    .label { color: var(--muted); font-size: 12px; }
+    .value { text-align: right; font-weight: 820; overflow-wrap: anywhere; }
+    .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-width: 0; }
+    .market-card .price-grid { grid-template-columns: 1fr; }
+    .price-box { border: 1px solid var(--line); border-radius: 7px; padding: 10px; background: var(--panel-2); min-width: 0; }
+    .price-box label { display: block; color: var(--muted); font-size: 11px; margin-bottom: 5px; }
+    .price-box strong { display: block; font-size: clamp(25px, 2.35vw, 38px); line-height: 1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .sub { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.3; }
+    .bar { height: 9px; border-radius: 99px; background: #1b283b; overflow: hidden; }
+    .bar > span { display: block; height: 100%; background: var(--blue); }
+    .bar.green > span { background: var(--green); }
+    .bar.yellow > span { background: var(--yellow); }
+    .bar.red > span { background: var(--red); }
+    .progress-row { display: grid; grid-template-columns: 94px 1fr 46px; gap: 9px; align-items: center; margin: 7px 0; font-size: 12px; }
+    .battle-gauge { display: none; position: relative; height: 48px; border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(90deg, rgba(239,68,68,.24), rgba(250,204,21,.17), rgba(34,197,94,.22)); margin: 8px 0; }
+    .marker { position: absolute; top: 6px; width: 2px; height: 36px; background: var(--text); transform: translateX(-1px); }
+    .marker.current { width: 4px; background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
+    .trade-map { display: grid; grid-template-columns: minmax(170px, 220px) minmax(0, 1fr); gap: 8px; align-items: stretch; border: 1px solid var(--line); border-radius: 8px; background: #0b1422; margin: 8px 0 8px; padding: 8px; }
+    .map-current-read { display: grid; gap: 5px; align-content: center; min-width: 0; padding: 10px; border: 1px solid rgba(39,52,73,.82); border-radius: 7px; background: rgba(17,28,43,.72); }
+    .map-current-read span { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+    .map-current-read strong { color: var(--cyan); font-size: clamp(28px, 4vw, 42px); line-height: .9; font-variant-numeric: tabular-nums; }
+    .map-current-read em { color: var(--muted); font-style: normal; font-size: 11px; line-height: 1.22; }
+    .trade-rail { position: relative; height: 102px; border: 1px solid var(--line); border-radius: 9px; background: linear-gradient(90deg, rgba(239,68,68,.30) 0%, rgba(250,204,21,.16) 48%, rgba(34,197,94,.27) 100%); overflow: hidden; }
+    .trade-rail::before { content: ""; position: absolute; left: 12px; right: 12px; top: 30px; height: 13px; border-radius: 999px; background: rgba(231,238,248,.18); box-shadow: inset 0 0 0 1px rgba(231,238,248,.08); }
+    .level-line { position: absolute; top: 9px; height: 50px; width: 2px; transform: translateX(-1px); background: rgba(226,232,240,.58); }
+    .level-line.danger { background: #fb7185; }
+    .level-line.entry, .level-line.target, .level-line.runner { background: #86efac; }
+    .level-line.current { width: 5px; border-radius: 99px; background: var(--cyan); box-shadow: 0 0 16px var(--cyan); }
+    .line-text { position: absolute; top: calc(54px + var(--lane, 0) * 16px); left: 50%; transform: translateX(-50%); width: 76px; color: var(--text); text-align: center; font-size: 9px; line-height: 1.04; text-shadow: 0 1px 2px #000; pointer-events: none; }
+    .line-text b { display: block; color: var(--muted); font-size: 9px; font-weight: 850; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .line-text small { display: block; color: var(--text); font-size: 10px; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .line-text.edge-left { left: 0; transform: translateX(0); text-align: left; padding-left: 3px; }
+    .line-text.edge-right { left: 100%; transform: translateX(-100%); text-align: right; padding-right: 3px; }
+    .level-line.current .line-text b, .level-line.current .line-text small { color: var(--cyan); }
+    .level-line.danger .line-text b, .level-line.danger .line-text small { color: #fecdd3; }
+    .level-line.entry .line-text b, .level-line.entry .line-text small,
+    .level-line.target .line-text b, .level-line.target .line-text small,
+    .level-line.runner .line-text b, .level-line.runner .line-text small { color: #bbf7d0; }
+    .map-end-label { position: absolute; top: 12px; color: var(--muted); font-size: 10px; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; }
+    .map-end-label.left { left: 12px; color: #fecdd3; }
+    .map-end-label.right { right: 12px; color: #bbf7d0; }
+    .map-levels { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+    .level-chip { min-width: 0; border: 1px solid rgba(39,52,73,.78); border-radius: 6px; padding: 5px 6px; background: rgba(17,28,43,.55); }
+    .level-chip span { display: block; color: var(--muted); font-size: 10px; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .level-chip strong { display: block; color: var(--text); font-size: 13px; line-height: 1.08; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .why-list { display: grid; gap: 6px; }
+    .why-row { display: grid; grid-template-columns: 72px 1fr auto; gap: 8px; align-items: center; border-bottom: 1px solid rgba(39,52,73,.55); padding-bottom: 6px; }
+    .why-status { color: var(--muted); font-size: 11px; text-align: right; white-space: nowrap; }
+    .status-dot { display: inline-flex; min-width: 64px; height: 24px; padding: 0 8px; align-items: center; justify-content: center; border-radius: 999px; font-size: 10px; font-weight: 900; letter-spacing: .04em; border: 1px solid rgba(239,68,68,.36); background: rgba(239,68,68,.12); color: #fecdd3; }
+    .status-dot.ok { border-color: rgba(103,232,249,.36); background: rgba(103,232,249,.10); color: var(--cyan); }
+    .status-dot.warn { border-color: rgba(250,204,21,.38); background: rgba(250,204,21,.13); color: var(--yellow); }
+    .chart-card canvas { width: 100%; height: 280px; background: #070d16; border: 1px solid var(--line); border-radius: 8px; display: block; }
+    details { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+    details > summary { cursor: pointer; padding: 11px 12px; color: var(--cyan); font-weight: 900; }
+    details[open] > summary { border-bottom: 1px solid var(--line); }
+    .details-body { padding: 12px; }
+    .selector-grid { display: grid; grid-template-columns: 1.2fr .7fr .85fr .65fr .85fr auto auto auto auto; gap: 8px; align-items: end; }
+    .field label { display: block; color: var(--muted); font-size: 11px; margin-bottom: 5px; }
+    .field-help { color: var(--muted); font-size: 10px; line-height: 1.25; margin-top: 5px; }
+    .selector-guide { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+    .guide-item { border: 1px solid rgba(39,52,73,.72); border-radius: 7px; background: rgba(17,28,43,.55); padding: 8px; min-width: 0; }
+    .guide-item strong { display: block; color: var(--cyan); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+    .guide-item span { display: block; color: var(--muted); font-size: 11px; line-height: 1.25; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 760px; }
+    th, td { padding: 7px 7px; border-bottom: 1px solid rgba(39,52,73,.78); text-align: right; font-variant-numeric: tabular-nums; }
+    th:first-child, td:first-child { text-align: left; }
+    th { color: var(--muted); font-weight: 850; }
+    tr.selected { outline: 1px solid var(--cyan); background: rgba(103,232,249,.08); }
+    tr.position-managed { outline: 1px solid var(--cyan); background: rgba(103,232,249,.10); box-shadow: inset 3px 0 0 var(--cyan); }
+    tr.best { background: rgba(34,197,94,.08); }
+    tr.atm { box-shadow: inset 3px 0 0 var(--blue); }
+    .clickable tr { cursor: pointer; }
+    .timeline { display: grid; gap: 7px; }
+    .timeline-row { display: grid; grid-template-columns: 70px 110px 1fr 86px; gap: 8px; align-items: center; border-bottom: 1px solid rgba(39,52,73,.55); padding-bottom: 7px; font-size: 12px; }
+    .toast-stack { position: fixed; right: 14px; bottom: 14px; z-index: 50; display: grid; gap: 8px; max-width: 360px; }
+    .toast { border: 1px solid var(--line); border-left: 4px solid var(--cyan); background: rgba(15,23,36,.98); color: var(--text); border-radius: 8px; padding: 10px 12px; box-shadow: 0 16px 40px rgba(0,0,0,.35); font-size: 13px; }
+    .toast.error { border-left-color: var(--red); }
+    .toast.success { border-left-color: var(--green); }
+    .toast.warn { border-left-color: var(--yellow); }
+    .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 82px; border-radius: 999px; padding: 3px 7px; font-size: 11px; font-weight: 900; border: 1px solid var(--line); }
+    .badge.add { color: var(--green); background: rgba(34,197,94,.12); }
+    .badge.trim { color: var(--yellow); background: rgba(250,204,21,.12); }
+    .badge.exit { color: var(--red); background: rgba(239,68,68,.12); }
+    .badge.hold { color: var(--cyan); background: rgba(103,232,249,.10); }
+    @media (max-width: 1280px) {
+      .desk-primary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .desk-primary > .map-card { grid-column: 1 / -1; }
+      .desk-primary > .market-card,
+      .desk-primary > .command-card,
+      .desk-primary > .mission-card { grid-column: auto; }
+      .desk-primary > .mission-card { grid-column: 1 / -1; }
+      .planning-row > .card { grid-column: auto; }
+      .desk-context, .desk-support, .desk-planning, .reference-row, .row-2, .position-row, .planning-row { grid-template-columns: 1fr 1fr; }
+      .map-card, .chart-card { grid-column: 1 / -1; }
+      .map-levels { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .selector-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .selector-guide { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 720px) {
+      header { align-items: flex-start; flex-direction: column; }
+      .toolbar { justify-content: flex-start; }
+      .desk-primary, .desk-context, .desk-support, .desk-planning, .reference-row, .row-2, .position-row, .planning-row, .price-grid, .metric-grid, .mission-detail-grid { grid-template-columns: 1fr; }
+      .desk-primary > .market-card,
+      .desk-primary > .command-card,
+      .desk-primary > .mission-card,
+      .desk-primary > .map-card { grid-column: auto; }
+      .map-card, .chart-card { grid-column: auto; }
+      .trade-map { grid-template-columns: 1fr; }
+      .map-levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .section-heading { align-items: flex-start; flex-direction: column; }
+      .section-heading .sub { text-align: left; }
+      .selector-grid { grid-template-columns: 1fr; }
+      .selector-guide { grid-template-columns: 1fr; }
+      .action-label { font-size: 44px; }
+      .timeline-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Silver / SLV Play Finder</h1>
+      <div class="topline">
+        <span class="pill"><span class="dot" id="liveDot"></span><span id="liveStatus">Offline</span></span>
+        <span class="pill" id="marketStatus">Market -</span>
+        <span class="pill" id="lastUpdate">Last -</span>
+        <span class="pill" id="qualityPill">Data -</span>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button id="refreshBtn">Refresh</button>
+      <button id="startLiveBtn">Start Live</button>
+      <button id="stopLiveBtn">Stop Live</button>
+      <button id="alertsBtn">Alerts</button>
+      <button id="journalBtn">Journal</button>
+      <button id="settingsBtn">Settings</button>
+      <button id="diagnosticsBtn">Diagnostics</button>
+    </div>
+  </header>
+
+  <main class="cockpit">
+    <section class="desk-primary">
+      <article class="card map-card">
+        <h2>Trade Plan Map</h2>
+        <div class="battle-gauge">
+          <span class="marker" id="bearMarker"></span>
+          <span class="marker current" id="currentMarker"></span>
+          <span class="marker" id="bullMarker"></span>
+        </div>
+        <div class="trade-map" id="tradeMap"></div>
+        <div class="map-levels" id="battleKv"></div>
+      </article>
+
+      <article class="card market-card">
+        <h2>Market Snapshot</h2>
+        <div class="price-grid">
+          <div class="price-box"><label>Silver</label><strong id="silverPrice">-</strong><div class="sub" id="silverMeta">-</div></div>
+          <div class="price-box"><label>SLV</label><strong id="slvPrice">-</strong><div class="sub" id="slvMeta">-</div></div>
+        </div>
+        <div class="kv" id="marketKv" style="margin-top:10px"></div>
+      </article>
+
+      <article class="card command-card">
+        <h2>Suggested Trade</h2>
+        <div id="action" class="action-label neutral">WAIT</div>
+        <div class="progress-row"><span>Confidence</span><span class="bar" id="confidenceBar"><span></span></span><strong id="confidence">-</strong></div>
+        <div class="metric-grid">
+          <div class="metric"><span>Active Setup</span><strong id="activeSetup">-</strong></div>
+          <div class="metric"><span>Bullish Call</span><strong id="bullishCall">-</strong></div>
+          <div class="metric"><span>Bearish Put</span><strong id="bearishPut">-</strong></div>
+          <div class="metric"><span>No Trade</span><strong id="noTrade">-</strong></div>
+        </div>
+        <div class="reason" id="reason">Waiting for data.</div>
+      </article>
+
+      <article class="card mission-card">
+        <h2>Position Mission Control</h2>
+        <div class="metric-grid">
+          <div class="metric"><span>Position</span><strong id="mcMode">-</strong></div>
+          <div class="metric"><span>Signal</span><strong id="mcSignal">-</strong></div>
+          <div class="metric"><span>P/L</span><strong id="mcPnl">-</strong></div>
+        </div>
+        <div class="mission-detail-grid">
+          <div class="mission-panel">
+            <h3>Position Metrics</h3>
+            <div class="kv" id="mcKv"></div>
+          </div>
+          <div class="mission-panel ai-review-panel">
+            <h3>AI Review</h3>
+            <div class="reason" id="mcReason">Waiting for active tastytrade position.</div>
+            <div class="sub" id="positionRules">Position rules activate only for open tastytrade positions.</div>
+          </div>
+        </div>
+      </article>
+
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <h2>Current Position Monitor</h2>
+        <p class="sub">Live tastytrade positions, current P/L, and hold/trim/exit management.</p>
+      </div>
+      <div class="position-row">
+        <article class="card compact positions-card">
+          <h2>Tastytrade Positions</h2>
+          <div class="button-row"><button id="refreshPositionsBtn">Refresh Positions</button><button id="defaultPositionBtn">Default Largest</button></div>
+          <div id="positionsSummary" class="metric-grid" style="margin:10px 0"></div>
+          <div class="sub" id="positionsStatus"></div>
+          <div class="table-wrap"><table id="positionsTable"></table></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <h2>Planning Lab</h2>
+        <p class="sub">Hypothetical next trade only. Active position trim/exit decisions stay above.</p>
+      </div>
+      <div class="planning-row">
+        <article class="card compact best-contract-card">
+          <h2>1. Best Candidate</h2>
+          <div class="metric-grid">
+            <div class="metric"><span>Setup</span><strong id="bestContractSetup">-</strong></div>
+            <div class="metric"><span>Recommended</span><strong id="bestContractLabel">-</strong></div>
+            <div class="metric"><span>Decision</span><strong id="bestContractDecision">-</strong></div>
+          </div>
+          <div class="progress-row"><span>Quality</span><span class="bar" id="contractQualityBar"><span></span></span><strong id="contractQuality">-</strong></div>
+          <div class="progress-row"><span>Timing</span><span class="bar" id="entryTimingBar"><span></span></span><strong id="entryTiming">-</strong></div>
+          <div class="kv" id="bestContractKv" style="margin-top:8px"></div>
+          <div class="sub" id="bestContractReason">Waiting for option-chain recommendation.</div>
+        </article>
+        <article class="card trade-plan-card">
+          <h2>2. Plan Assumptions</h2>
+          <p class="plan-scope">This models a possible new trade. It does not place an order and it does not change current tastytrade position management.</p>
+          <div class="planning-control-grid">
+            <label>Contracts
+              <input id="contractsInput" type="number" min="1" step="1">
+            </label>
+            <button id="updateSizeBtn">Apply Size</button>
+          </div>
+          <div class="assumption-banner" id="planningAssumptionStatus">Waiting for planning assumptions.</div>
+          <h3 class="micro-heading">Levels / Risk</h3>
+          <div class="kv" id="tradePlan"></div>
+          <div class="planning-actions">
+            <button id="trackPositionBtn">Track Paper Plan</button>
+            <button id="logSnapshotBtn">Log Snapshot</button>
+            <button id="resetDayBtn">Reset Day</button>
+          </div>
+        </article>
+        <article class="card compact selected-contract-card">
+          <h2>3. Modeled Outcome</h2>
+          <div class="metric-grid">
+            <div class="metric"><span>Selected Plan</span><strong id="missionSelected">-</strong></div>
+            <div class="metric"><span>Entry Status</span><strong id="missionRecommendation">-</strong></div>
+            <div class="metric"><span>Current Model</span><strong id="missionPnl">-</strong></div>
+          </div>
+          <div class="kv" id="missionKv" style="margin-top:10px"></div>
+          <div class="model-note" id="missionReason"></div>
+        </article>
+        <article class="card compact trade-score-card">
+          <h2>4. Setup Score</h2>
+          <div class="progress-row"><span>Score</span><span class="bar" id="tradeScoreBar"><span></span></span><strong id="tradeScore">-</strong></div>
+          <div id="scoreBreakdown"></div>
+        </article>
+        <article class="card compact odds-card">
+          <h2>5. Target Odds</h2>
+          <div id="oddsBars"></div>
+        </article>
+        <article class="card compact planning-read-card">
+          <h2>6. Planning Desk Read</h2>
+          <div class="reason" id="planningBrain">Waiting for selected or recommended contract.</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="reference-row">
+      <article class="card">
+        <h2>Market Health</h2>
+        <div id="healthMeters"></div>
+        <div class="kv" id="flowKv" style="margin-top:10px"></div>
+      </article>
+      <article class="card">
+        <h2>Strategy Scores</h2>
+        <div id="strategyBars"></div>
+      </article>
+      <article class="card">
+        <h2>Watchlist</h2>
+        <div id="watchlist"></div>
+      </article>
+    </section>
+
+    <details id="optionsDetails" open>
+      <summary>Options Chain and Projection</summary>
+      <div class="details-body">
+        <div class="selector-grid">
+          <div class="field"><label>Expiration</label><select id="expirationSelect"></select></div>
+          <div class="field"><label>Call / Put</label><select id="typeSelect"><option value="C">Calls</option><option value="P">Puts</option></select></div>
+          <div class="field"><label>Strike</label><select id="strikeSelect"></select></div>
+          <div class="field"><label>Entry override - planning only</label><input id="entryOverrideInput" type="number" step="any" placeholder="blank = live mid"><div class="field-help" id="entryOverrideStatus">Blank uses the selected option's live mid.</div></div>
+          <button id="refreshChainBtn" title="Reload the SLV option chain from Tastytrade.">Refresh Chain</button>
+          <button id="autoAtmBtn" title="Choose the strike closest to current SLV for the selected expiration/type.">Auto ATM</button>
+          <button id="autoBestBtn" title="Pick the highest-ranked planning contract from the Best Contracts table.">Best Trade</button>
+          <button id="selectContractBtn" title="Lock the expiration, call/put, and strike currently shown in the dropdowns.">Select Contract</button>
+          <button id="savePlanBtn" title="Save contract size and entry override for projections only. This does not place an order.">Save Plan</button>
+        </div>
+        <div class="selector-guide">
+          <div class="guide-item"><strong>Contract picker</strong><span>Expiration, Call/Put, and Strike choose the planning contract. This does not place an order.</span></div>
+          <div class="guide-item"><strong>Entry override</strong><span>Optional fill price for modeling risk/reward and P/L. Leave blank to use the live option mid.</span></div>
+          <div class="guide-item"><strong>Auto buttons</strong><span>Auto ATM picks the nearest strike. Best Trade selects the highest-ranked contract from the table.</span></div>
+          <div class="guide-item"><strong>Save Plan</strong><span>Saves the override and size for projections. Live position management still uses Tastytrade position data.</span></div>
+        </div>
+        <div style="margin-top:12px">
+          <article class="card compact">
+            <h2>Best Contracts</h2>
+            <div class="table-wrap"><table class="clickable" id="contractComparisonTable"></table></div>
+          </article>
+        </div>
+        <div class="sub" id="chainStatus" style="margin:10px 0">Option chain loading.</div>
+        <div class="table-wrap"><table class="clickable" id="strikeTable"></table></div>
+        <div style="margin-top:12px">
+          <article class="card compact"><h2>Option Projection - Planning Size</h2><div class="sub" id="projectionScope" style="margin-bottom:8px"></div><div class="table-wrap"><table id="projectionTable"></table></div></article>
+        </div>
+      </div>
+    </details>
+
+    <section class="desk-support">
+      <article class="card why-card">
+        <h2>Why</h2>
+        <div class="why-list" id="whyList"></div>
+      </article>
+    </section>
+
+    <details id="timelineDetails">
+      <summary>Trade Timeline and Stats</summary>
+      <div class="details-body">
+        <div class="row-2" style="grid-template-columns: 1.1fr .9fr;">
+          <article class="card compact"><h2>Trade Timeline</h2><div class="timeline" id="timeline"></div></article>
+          <article class="card compact"><h2>Backtesting Foundation</h2><div id="backtest"></div></article>
+        </div>
+      </div>
+    </details>
+
+    <article class="card chart-card">
+      <h2>SLV Chart</h2>
+      <canvas id="chart" width="1500" height="330"></canvas>
+      <div class="sub">Local intraday snapshots with VWAP, bull trigger, bear trigger, opening range, volume bars, and silver overlay when valid.</div>
+    </article>
+
+    <details id="settingsDetails">
+      <summary>Settings</summary>
+      <div class="details-body">
+        <div class="selector-grid">
+          <div class="field"><label>Option symbol override</label><input id="optionSymbolInput" type="text"></div>
+          <div class="field"><label>Expected silver min</label><input id="silverMinInput" type="number" step="any"></div>
+          <div class="field"><label>Expected silver max</label><input id="silverMaxInput" type="number" step="any"></div>
+          <button id="saveSettingsBtn">Save Settings</button>
+        </div>
+      </div>
+    </details>
+
+    <details id="diagnosticsDetails">
+      <summary>Diagnostics</summary>
+      <div class="details-body">
+        <div class="kv" id="diagnosticsKv"></div>
+        <pre id="diagnosticsRaw"></pre>
+      </div>
+    </details>
+  </main>
+
+  <div class="toast-stack" id="toastStack"></div>
+
+  <script>
+    const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:8788' : '';
+    const apiUrl = path => `${API_BASE}${path}`;
+
+    const TradeState = {
+      raw: null,
+      market: {},
+      levels: {},
+      volume: {},
+      option: {},
+      signals: {},
+      history: {},
+      chain: {},
+      positions: {},
+      loading: {},
+      subscribers: []
+    };
+
+    let suppressSelectorEvents = false;
+    let pendingOptionSelection = null;
+    let previousAlertState = null;
+    let alertsEnabled = true;
+
+    document.getElementById('optionsDetails').open = true;
+
+    function subscribe(fn) { TradeState.subscribers.push(fn); }
+    function emitTradeState() { TradeState.subscribers.forEach(fn => fn(TradeState)); }
+
+    bind('refreshBtn', () => refreshDashboard(true));
+    bind('startLiveBtn', () => runAction('startLiveBtn', '/api/live/start', {}, 'Live updates started'));
+    bind('stopLiveBtn', () => runAction('stopLiveBtn', '/api/live/stop', {}, 'Live updates stopped'));
+    bind('alertsBtn', toggleAlerts);
+    bind('journalBtn', () => {
+      document.querySelector('details[open]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      toast('Journal and timeline are open below the chart.', 'success');
+    });
+    bind('settingsBtn', () => document.getElementById('settingsDetails').open = true);
+    bind('diagnosticsBtn', () => {
+      const details = document.getElementById('diagnosticsDetails');
+      details.open = !details.open;
+      if (details.open) details.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      toast(`Diagnostics ${details.open ? 'opened' : 'closed'}`, 'success');
+    });
+    bind('refreshChainBtn', () => runAction('refreshChainBtn', '/api/options/refresh', {}, 'Option chain refreshed'));
+    bind('refreshPositionsBtn', () => runAction('refreshPositionsBtn', '/api/tastytrade/positions', {}, 'Positions refreshed'));
+    bind('defaultPositionBtn', () => selectManagedPosition('', 'largest open SLV position', true));
+    bind('updateSizeBtn', updateSize);
+    bind('trackPositionBtn', trackPosition);
+    bind('logSnapshotBtn', () => runAction('logSnapshotBtn', '/api/log', {}, 'Snapshot logged'));
+    bind('resetDayBtn', () => runAction('resetDayBtn', '/api/reset', {}, 'Daily data reset'));
+    bind('autoAtmBtn', () => autoSelect('atm'));
+    bind('autoBestBtn', () => autoSelect('best'));
+    bind('selectContractBtn', () => selectCurrentContract());
+    bind('savePlanBtn', savePlan);
+    bind('saveSettingsBtn', saveSettings);
+    bind('expirationSelect', onOptionSelectorChange, 'change');
+    bind('typeSelect', onOptionSelectorChange, 'change');
+    bind('strikeSelect', onOptionSelectorChange, 'change');
+    bind('contractsInput', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        updateSize();
+      }
+    }, 'keydown');
+    bind('contractsInput', renderPlanningModel, 'input');
+    bind('contractsInput', updateSize, 'change');
+    bind('contractsInput', event => {
+      if (event.target.value.trim() === '') event.target.value = event.target.dataset.stateValue || '1';
+      renderPlanningModel();
+    }, 'blur');
+    bind('entryOverrideInput', () => {
+      renderEntryOverrideStatus(TradeState);
+      renderPlanningModel();
+    }, 'input');
+
+    subscribe(renderAll);
+
+    const events = new EventSource(apiUrl('/api/events'));
+    events.addEventListener('state', event => setTradeState(JSON.parse(event.data), { source: 'stream' }));
+    events.onerror = () => toast('Browser stream disconnected; polling fallback active.', 'warn');
+
+    async function refreshDashboard(showToast = false) {
+      setLoading('refreshBtn', true);
+      try {
+        const res = await fetch(apiUrl('/api/state'));
+        const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || 'Refresh failed');
+        setTradeState(data, { source: 'refresh' });
+        if (showToast) toast('Dashboard refreshed', 'success');
+      } catch (error) {
+        toast(`Error: ${error.message}`, 'error');
+      } finally {
+        setLoading('refreshBtn', false);
+      }
+    }
+
+    async function runAction(buttonId, url, body = {}, success = 'Done') {
+      setLoading(buttonId, true);
+      try {
+        const res = await fetch(apiUrl(url), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || success);
+        setTradeState(data.payload || data, { source: url });
+        toast(success, 'success');
+      } catch (error) {
+        toast(`Error: ${error.message}`, 'error');
+      } finally {
+        setLoading(buttonId, false);
+      }
+    }
+
+    function setTradeState(payload, meta = {}) {
+      const c = payload.calculated || {};
+      const market = c.market || {};
+      const selected = c.selectedOption || {};
+      TradeState.raw = payload;
+      TradeState.market = {
+        slv: market.slvPrice,
+        slvBid: market.slvBid,
+        slvAsk: market.slvAsk,
+        slvChangePct: market.slvChangePct,
+        silver: c.silver?.valid ? c.silver.price : null,
+        silverValid: Boolean(c.silver?.valid),
+        silverReason: c.silver?.reason || '',
+        silverSource: c.silver?.source || 'MetalPriceAPI',
+        silverTimestamp: c.silver?.timestamp || c.silver?.updatedAt || null,
+        silverError: c.silver?.error || null,
+        silverChangePct: market.silverChangePct,
+        marketStatus: payload.marketStatus,
+        lastUpdate: payload.timestamp || new Date().toISOString(),
+        dataQuality: c.dataQuality?.status || 'BAD',
+        tracking: c.tracking,
+        impliedSLV: c.impliedSLV
+      };
+      TradeState.levels = {
+        vwap: c.vwap?.value,
+        openingRangeHigh: c.openingRange?.high,
+        openingRangeLow: c.openingRange?.low,
+        bullTrigger: c.bullTrigger,
+        bearTrigger: c.bearTrigger,
+        neutralZone: c.neutralZone,
+        expectedHigh: c.expectedRangeHigh,
+        expectedLow: c.expectedRangeLow,
+        atr: c.atr?.value,
+        stop: c.tradePlan?.stopSLV,
+        trim1: c.tradePlan?.trim1SLV,
+        trim2: c.tradePlan?.trim2SLV,
+        runner: c.tradePlan?.runnerSLV
+      };
+      TradeState.volume = {
+        currentVolume: market.slvVolume,
+        averageVolume: market.avgSlvVolume,
+        timeAdjustedPace: c.volumePace,
+        volumeScore: c.volumeScore,
+        volumeConfirmation: c.volumeConfirmation
+      };
+      TradeState.option = {
+        selectedExpiration: selected.expiration,
+        selectedStrike: selected.strike,
+        selectedType: selected.type || payload.inputs?.optionType || 'C',
+        selectedContractSymbol: selected.streamerSymbol || selected.symbol,
+        displaySymbol: selected.displaySymbol || selected.streamerSymbol || selected.symbol,
+        bid: selected.bid,
+        ask: selected.ask,
+        mid: selected.mid,
+        last: selected.last,
+        volume: selected.volume,
+        openInterest: selected.openInterest,
+        iv: selected.iv,
+        delta: selected.delta,
+        gamma: selected.gamma,
+        theta: selected.theta,
+        vega: selected.vega,
+        dte: selected.dte,
+        liquidityScore: c.optionsLiquidityScore,
+        contractSize: payload.inputs?.contracts || 1,
+        entryPrice: payload.inputs?.optionEntryOverride || payload.inputs?.optionEntry || selected.mid
+      };
+      TradeState.signals = {
+        actionSignal: c.action,
+        confidencePercent: c.confidencePercent ?? probabilityFromLetter(c.confidence),
+        confidenceLetter: c.confidence,
+        activeSetup: c.activeSetup || c.bestPlay || c.bestSetup?.name || 'No Edge',
+        bestSetup: c.bestSetup || {},
+        strategyScores: c.strategyScores || {},
+        bullishCallScore: c.bullishCallScore,
+        bearishPutScore: c.bearishPutScore,
+        noTradeScore: c.noTradeScore,
+        positionScore: c.positionScore,
+        tradeScore: c.tradeScore,
+        tradeScoreBreakdown: c.tradeScoreBreakdown || {},
+        tradeScoreInterpretation: c.tradeScoreInterpretation,
+        trend: c.trend,
+        trendScore: c.trendScore,
+        momentumScore: c.momentumScore,
+        institutionalFlow: c.institutionalFlow,
+        whyList: c.why || [],
+        aiTradeBrainText: c.aiTradeBrainText,
+        reason: c.reasonSummary,
+        mission: c.missionControl || {},
+        tradePlan: c.tradePlan || {},
+        tradeMap: c.tradeMap || [],
+        positionManagement: c.positionManagement || {},
+        contractRecommendation: c.contractRecommendation || {},
+        optionProjection: c.options || {},
+        targetOdds: c.targetOdds || []
+      };
+      TradeState.history = {
+        snapshots: c.signalSnapshots || [],
+        actionTimeline: c.actionTimeline || [],
+        chart: payload.chart || [],
+        optionMidHistory: []
+      };
+      TradeState.chain = payload.optionChain || {};
+      TradeState.positions = c.positions || {};
+      emitTradeState();
+      maybeAlert(meta.source);
+    }
+
+    function renderAll(state) {
+      renderHeader(state);
+      renderCommand(state);
+      renderMarket(state);
+      renderBattlefield(state);
+      renderMissionControl(state);
+      renderBestContract(state);
+      renderTradePlan(state);
+      renderMission(state);
+      renderTradeScore(state);
+      renderPlanningRead(state);
+      renderWhy(state);
+      renderHealth(state);
+      renderStrategyScores(state);
+      renderOdds(state);
+      renderWatchlist(state);
+      renderOptions(state);
+      renderPlanningAssumptions(state);
+      renderContractComparison(state);
+      renderProjection(state);
+      renderPositions(state);
+      renderPositionRules(state);
+      renderTimeline(state);
+      renderBacktest(state);
+      renderDiagnostics(state);
+      drawChart(state);
+    }
+
+    function renderPlanningModel() {
+      renderPlanningAssumptions(TradeState);
+      renderTradePlan(TradeState);
+      renderMission(TradeState);
+      renderProjection(TradeState);
+    }
+
+    function renderHeader(state) {
+      const raw = state.raw || {};
+      const quality = state.market.dataQuality;
+      setText('liveStatus', raw.live?.connected ? 'Live' : raw.live?.connecting ? 'Connecting' : 'Offline');
+      className('liveDot', `dot ${quality === 'GOOD' ? 'good' : quality === 'WARNING' ? 'warn' : ''}`);
+      setText('marketStatus', `Market ${state.market.marketStatus || '-'}`);
+      setText('lastUpdate', `Last ${state.market.lastUpdate ? new Date(state.market.lastUpdate).toLocaleTimeString() : '-'}`);
+      setText('qualityPill', `Data ${quality || '-'}`);
+      syncInputValue('contractsInput', state.option.contractSize || 1);
+    }
+
+    function renderCommand(state) {
+      const s = state.signals;
+      const pm = s.positionManagement || {};
+      const position = pm.position || {};
+      const positionMode = Boolean(pm.active);
+      const action = positionMode ? pm.signal : s.actionSignal;
+      const displayAction = String(suggestedTradeAction(action, positionMode) || 'WAIT');
+      const managementPlan = positionMode ? commandManagementPlan(state, pm) : null;
+      const actionEl = document.getElementById('action');
+      actionEl.textContent = displayAction || 'WAIT';
+      actionEl.className = `action-label ${actionClass(action)} ${displayAction.includes('TAKE PROFITS') ? 'take-profit-label' : ''}`.trim();
+      setText('confidence', pctWhole(s.confidencePercent));
+      setBar('confidenceBar', s.confidencePercent, s.confidencePercent >= 70 ? 'green' : s.confidencePercent >= 45 ? 'yellow' : 'red');
+      setText('activeSetup', positionMode ? managementPlan.positionLabel : s.activeSetup || '-');
+      setText('bullishCall', positionMode ? managementPlan.quantityLabel : scoreText(s.bullishCallScore));
+      setText('bearishPut', positionMode ? managementPlan.profitLabel : scoreText(s.bearishPutScore));
+      setText('noTrade', positionMode ? managementPlan.exitLabel : scoreText(s.noTradeScore));
+      document.querySelector('#activeSetup')?.previousElementSibling && (document.querySelector('#activeSetup').previousElementSibling.textContent = positionMode ? 'Position' : 'Active Setup');
+      document.querySelector('#bullishCall')?.previousElementSibling && (document.querySelector('#bullishCall').previousElementSibling.textContent = positionMode ? 'Quantity' : 'Bullish Call');
+      document.querySelector('#bearishPut')?.previousElementSibling && (document.querySelector('#bearishPut').previousElementSibling.textContent = positionMode ? 'Profit Now' : 'Bearish Put');
+      document.querySelector('#noTrade')?.previousElementSibling && (document.querySelector('#noTrade').previousElementSibling.textContent = positionMode ? 'Take Profit / Exit' : 'No Trade');
+      setText('reason', positionMode ? managementPlan.reason : commandReason(state));
+    }
+
+    function renderMarket(state) {
+      const m = state.market;
+      setText('silverPrice', m.silverValid ? money(m.silver) : 'Invalid');
+      setText('silverMeta', m.silverValid
+        ? `${m.silverSource} | ${pct(m.silverChangePct)} | Validation passed`
+        : `Silver feed invalid | Using SLV-only calculations`);
+      setText('slvPrice', money(m.slv));
+      setText('slvMeta', `${pct(m.slvChangePct)} | Bid/Ask ${money(m.slvBid)} / ${money(m.slvAsk)}`);
+      const trackingDiff = m.slv !== null && m.impliedSLV !== null ? m.slv - m.impliedSLV : null;
+      renderPairs('marketKv', [
+        ['Silver source', m.silverSource || 'MetalPriceAPI'],
+        ['Silver validation', m.silverValid ? 'Valid' : (m.silverReason || 'Invalid')],
+        ['Silver timestamp', m.silverTimestamp ? new Date(m.silverTimestamp).toLocaleTimeString() : '-'],
+        ['VWAP', money(state.levels.vwap)],
+        ['Volume pace', pct(state.volume.timeAdjustedPace)],
+        ['Tracking', trackingInterpretation(m.tracking, trackingDiff)],
+        ['Implied SLV', money(m.impliedSLV)],
+        ['SLV volume', whole(state.volume.currentVolume)]
+      ]);
+    }
+
+    function renderBattlefield(state) {
+      const l = state.levels;
+      positionGauge(state.market.slv, l.bearTrigger, l.bullTrigger);
+      renderTradeMap(state);
+      const battle = document.getElementById('battleKv');
+      if (battle) {
+        const chips = [
+          ['Bear', money(l.bearTrigger)],
+          ['SLV', money(state.market.slv)],
+          ['Bull', money(l.bullTrigger)],
+          ['Zone', l.neutralZone],
+          ['Open', `${money(l.openingRangeLow)}-${money(l.openingRangeHigh)}`],
+          ['Expected', `${money(l.expectedLow)}-${money(l.expectedHigh)}`],
+          ['Stop', money(l.stop)],
+          ['Trim 1 / 2', `${money(l.trim1)} / ${money(l.trim2)}`]
+        ];
+        battle.innerHTML = chips.map(([k, v]) => `<div class="level-chip"><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`).join('');
+      }
+    }
+
+    function renderTradeMap(state) {
+      const rows = state.signals.tradeMap || [];
+      const map = document.getElementById('tradeMap');
+      if (!map) return;
+      if (!rows.length) {
+        map.innerHTML = '<div class="sub" style="padding:12px">Waiting for levels.</div>';
+        return;
+      }
+      const current = rows.find(row => row.type === 'current') || { value: state.market.slv, label: 'Current SLV' };
+      const currentValue = Number(current.value);
+      const above = rows.filter(row => Number(row.value) > currentValue).sort((a, b) => Number(a.value) - Number(b.value))[0];
+      const below = rows.filter(row => Number(row.value) < currentValue).sort((a, b) => Number(b.value) - Number(a.value))[0];
+      const plotted = rows
+        .map(row => ({ ...row, left: Math.max(2, Math.min(98, Number(row.positionPct) || 0)) }))
+        .sort((a, b) => a.left - b.left);
+      plotted.forEach((row, index) => {
+        const previous = plotted[index - 1];
+        row.lane = previous && Math.abs(row.left - previous.left) < 7 ? (previous.lane + 1) % 3 : 0;
+        row.edge = row.left <= 8 ? 'edge-left' : row.left >= 92 ? 'edge-right' : '';
+      });
+      map.innerHTML = `
+        <div class="map-current-read">
+          <span>Current SLV</span>
+          <strong>${money(current.value)}</strong>
+          <em>Risk: ${below ? `${esc(below.label)} ${money(below.value)}` : '-'} | Upside: ${above ? `${esc(above.label)} ${money(above.value)}` : '-'}</em>
+        </div>
+        <div class="trade-rail">
+          <span class="map-end-label left">Risk</span>
+          <span class="map-end-label right">Upside</span>
+          ${plotted.map(row => `<span class="level-line ${esc(row.type || '')}" style="left:${row.left}%; --lane:${row.lane || 0}"><span class="line-text ${esc(row.edge)}"><b>${shortLevelLabel(row.label)}</b><small>${money(row.value)}</small></span></span>`).join('')}
+        </div>
+      `;
+    }
+
+    function renderMissionControl(state) {
+      const m = state.signals.mission || {};
+      const pm = state.signals.positionManagement || {};
+      const position = pm.position || {};
+      const active = Boolean(pm.active);
+      if (!active) {
+        setText('mcMode', 'No active position');
+        document.getElementById('mcSignal').innerHTML = '-';
+        setText('mcPnl', '-');
+        renderPairs('mcKv', [
+          ['Scope', 'Current/open tastytrade positions only'],
+          ['Planning', 'Use Planning Lab below for selected or future contracts']
+        ]);
+        setText('mcReason', 'No active tastytrade SLV option position detected. This panel stays focused on live hold, trim, exit, and roll decisions.');
+        return;
+      }
+      const signal = pm.signal || m.recommendation || 'HOLD';
+      setText('mcMode', position.label || m.selected || position.symbol || 'Active position');
+      document.getElementById('mcSignal').innerHTML = badge(signal);
+      setText('mcPnl', `${money(position.pnl ?? m.livePnl)} ${pct(position.returnPct ?? m.liveReturnPct)}`);
+      renderPairs('mcKv', [
+        ['Contracts', position.quantity ?? m.positionSize ?? '-'],
+        ['Entry', money(m.entryPrice)],
+        ['Current mid', money(m.currentMid)],
+        ['Value / Cost', `${money(position.value ?? m.positionValue)} / ${money(m.costBasis)}`],
+        ['Delta / Gamma', `${num(m.delta)} / ${num(m.gamma)}`],
+        ['Theta / IV', `${money(m.theta)} / ${pct(m.iv)}`],
+        ['Exit below', money(m.levels?.exitBelowOption)],
+        ['SLV stop', money(m.levels?.stopSLV)],
+        ['Reclaim needed', money(m.levels?.reclaimNeededSLV)],
+        ['Trim 1 / 2', `${money(m.levels?.trim1SLV)} / ${money(m.levels?.trim2SLV)}`],
+        ['Trim option 1 / 2', `${money(m.levels?.trim1Option)} / ${money(m.levels?.trim2Option)}`],
+        ['Runner', money(m.levels?.runnerSLV)]
+      ]);
+      setText('mcReason', `${signal}: ${pm.reason || m.reason || 'Manage the open position using live P/L, VWAP, stops, trim targets, DTE, theta, and spread.'}`);
+    }
+
+    function renderBestContract(state) {
+      const rec = state.signals.contractRecommendation || {};
+      const option = rec.recommended || {};
+      const qualityScore = rec.contractQuality?.score ?? option.contractScore;
+      const qualityLabel = rec.contractQuality?.label || option.contractDecision || '-';
+      const timingScore = rec.entryTiming?.score;
+      const timingLabel = rec.entryTiming?.label || '-';
+      setText('bestContractSetup', rec.setupName || '-');
+      setText('bestContractLabel', option.label || '-');
+      document.getElementById('bestContractDecision').innerHTML = decisionPill(rec.finalDecision || '-');
+      setText('contractQuality', `${qualityLabel} ${scoreText(qualityScore)}/100`);
+      setText('entryTiming', `${timingLabel} ${scoreText(timingScore)}/100`);
+      setBar('contractQualityBar', qualityScore, qualityScore >= 75 ? 'green' : qualityScore >= 60 ? 'yellow' : 'red');
+      setBar('entryTimingBar', timingScore, timingScore >= 75 ? 'green' : timingScore >= 60 ? 'yellow' : 'red');
+      renderPairs('bestContractKv', [
+        ['Expiration', expirationLabel(option.expiration, option.dte)],
+        ['Strike / Type', `${money(option.strike)} ${option.typeLabel || (option.type === 'P' ? 'Put' : 'Call')}`],
+        ['Bid / Ask', `${money(option.bid)} / ${money(option.ask)}`],
+        ['Mid / Spread', `${money(option.mid)} / ${pct(option.spreadPct)}`],
+        ['Delta / Gamma', `${num(option.delta)} / ${num(option.gamma)}`],
+        ['Theta / IV', `${money(option.theta)} / ${pct(option.iv)}`],
+        ['Volume / OI', `${whole(option.volume)} / ${whole(option.openInterest)}`],
+        ['Liquidity', `${num(option.liquidityScore)}/10`],
+        ['Risk score', `${scoreText(option.riskScore)}/100`],
+        ['Move needed', money(rec.expectedMoveNeeded ?? option.expectedMoveNeeded)],
+        ['Trim 1 / 2', `${money(rec.trim1 ?? option.trim1Premium)} / ${money(rec.trim2 ?? option.trim2Premium)}`],
+        ['Stop', money(rec.stop ?? option.stopPremium)]
+      ]);
+      setText('bestContractReason', rec.reason || 'Waiting for option-chain recommendation.');
+    }
+
+    function planningContractsValue(useFallback = true) {
+      const input = document.getElementById('contractsInput');
+      const raw = input?.value?.trim();
+      if (!raw) return useFallback ? Math.max(1, Number(input?.dataset.stateValue || TradeState.option?.contractSize || 1)) : null;
+      const value = Math.floor(Number(raw));
+      if (!Number.isFinite(value) || value < 1) return useFallback ? 1 : null;
+      return value;
+    }
+
+    function planningSizeContext(state) {
+      const typedContracts = planningContractsValue(false);
+      const savedContracts = Number(state.option?.contractSize);
+      const fallbackContracts = Number.isFinite(savedContracts) && savedContracts > 0 ? savedContracts : 1;
+      const contracts = typedContracts ?? fallbackContracts;
+      return {
+        contracts,
+        savedContracts: fallbackContracts,
+        scale: fallbackContracts > 0 ? contracts / fallbackContracts : 1,
+        dirty: typedContracts !== null && typedContracts !== fallbackContracts
+      };
+    }
+
+    function planningEntryInfo(state) {
+      const input = document.getElementById('entryOverrideInput');
+      const inputFocused = document.activeElement === input;
+      const rawOverride = inputFocused ? input.value.trim() : state.raw?.inputs?.optionEntryOverride;
+      const overrideValue = rawOverride === '' || rawOverride === null || rawOverride === undefined ? null : Number(rawOverride);
+      const overrideActive = Number.isFinite(overrideValue) && overrideValue > 0;
+      const liveMid = numberOrNullClient(state.option?.mid);
+      const fallbackEntry = numberOrNullClient(state.option?.entryPrice);
+      return {
+        entry: overrideActive ? overrideValue : (liveMid ?? fallbackEntry),
+        overrideActive,
+        liveMid
+      };
+    }
+
+    function projectionRowForTarget(state, target) {
+      const rows = state.signals.optionProjection?.projection || [];
+      const numericTarget = Number(target);
+      if (!rows.length || !Number.isFinite(numericTarget)) return null;
+      return rows.reduce((best, row) => !best || Math.abs(Number(row.slv) - numericTarget) < Math.abs(Number(best.slv) - numericTarget) ? row : best, null);
+    }
+
+    function planningPnlAt(state, target) {
+      const row = projectionRowForTarget(state, target);
+      const info = planningEntryInfo(state);
+      const size = planningSizeContext(state);
+      if (!row || info.entry === null) return null;
+      return (Number(row.todayMid) - info.entry) * size.contracts * 100;
+    }
+
+    function targetOddsPct(state, target) {
+      const numericTarget = Number(target);
+      const row = (state.signals.targetOdds || []).reduce((best, item) => {
+        if (!Number.isFinite(Number(item.target)) || !Number.isFinite(numericTarget)) return best;
+        return !best || Math.abs(Number(item.target) - numericTarget) < Math.abs(Number(best.target) - numericTarget) ? item : best;
+      }, null);
+      return row?.probability ?? null;
+    }
+
+    function renderPlanningAssumptions(state) {
+      const size = planningSizeContext(state);
+      const contracts = size.contracts;
+      const info = planningEntryInfo(state);
+      const contract = contractLabel(state);
+      const debit = info.entry === null ? null : info.entry * contracts * 100;
+      const source = info.overrideActive ? 'entry override' : 'live mid';
+      const overrideHelp = info.overrideActive
+        ? 'Clear Entry override and Save Plan to return to live mid.'
+        : 'Blank Entry override keeps projections tied to the live option mid.';
+      const saveHint = size.dirty ? ' Apply Size to save this contract count.' : '';
+      setText('planningAssumptionStatus', `Planning ${contracts} ${contracts === 1 ? 'contract' : 'contracts'} of ${contract} at ${money(info.entry)} (${source}). Modeled debit/risk: ${money(debit)}.${saveHint} ${overrideHelp}`);
+    }
+
+    function renderTradePlan(state) {
+      const p = state.signals.tradePlan || {};
+      const info = planningEntryInfo(state);
+      const size = planningSizeContext(state);
+      const maxRisk = info.entry === null ? null : info.entry * size.contracts * 100;
+      const trim1Pnl = planningPnlAt(state, p.trim1SLV);
+      const trim2Pnl = planningPnlAt(state, p.trim2SLV);
+      const runnerPnl = planningPnlAt(state, p.runnerSLV);
+      const rr = maxRisk && trim2Pnl !== null ? trim2Pnl / maxRisk : p.rr;
+      renderPairs('tradePlan', [
+        ['Required SLV entry', tradeEntryText(state)],
+        ['Modeled option entry', `${money(info.entry)} ${info.overrideActive ? 'override' : 'live mid'}`],
+        ['Stop / invalidation', money(p.stopSLV)],
+        ['Take profit SLV 1 / 2', `${money(p.trim1SLV)} / ${money(p.trim2SLV)}`],
+        ['Runner SLV', money(p.runnerSLV)],
+        ['Max debit / risk', money(maxRisk)],
+        ['P/L at Trim 1 / 2', `${money(trim1Pnl)} / ${money(trim2Pnl)}`],
+        ['P/L at Runner', money(runnerPnl)],
+        ['Reward @ Trim 2', money(trim2Pnl)],
+        ['R/R', numberText(rr)]
+      ]);
+    }
+
+    function renderMission(state) {
+      const projection = state.signals.optionProjection || {};
+      const p = state.signals.tradePlan || {};
+      const info = planningEntryInfo(state);
+      const size = planningSizeContext(state);
+      const liveMid = numberOrNullClient(state.option?.mid);
+      const modeledValue = liveMid === null ? null : liveMid * size.contracts * 100;
+      const debit = info.entry === null ? null : info.entry * size.contracts * 100;
+      const modeledPnl = modeledValue === null || debit === null ? null : modeledValue - debit;
+      const modeledReturn = debit ? modeledPnl / debit : null;
+      setText('missionSelected', contractLabel(state) || state.option.displaySymbol || state.option.selectedContractSymbol || '-');
+      setText('missionRecommendation', planningRecommendation(state));
+      setText('missionPnl', `${money(modeledPnl)} ${pct(modeledReturn)}`);
+      renderPairs('missionKv', [
+        ['Contracts', size.contracts],
+        ['Modeled entry', money(info.entry)],
+        ['Live mid', money(liveMid)],
+        ['Value / debit', `${money(modeledValue)} / ${money(debit)}`],
+        ['Breakeven', money(projection.breakeven)],
+        ['Delta / Gamma', `${num(state.option.delta)} / ${num(state.option.gamma)}`],
+        ['Theta / IV', `${money(state.option.theta)} / ${pct(state.option.iv)}`],
+        ['ITM odds', pct(targetOddsPct(state, state.option.selectedStrike))],
+        ['Trim 1 / 2 odds', `${pct(targetOddsPct(state, p.trim1SLV))} / ${pct(targetOddsPct(state, p.trim2SLV))}`],
+        ['Runner odds', pct(targetOddsPct(state, p.runnerSLV))]
+      ]);
+      setText('missionReason', `${planningReason(state)} Current Model compares live mid against the modeled entry. It is not account P/L.`);
+    }
+
+    function renderTradeScore(state) {
+      const score = state.signals.tradeScore;
+      setText('tradeScore', `${Math.round(Number(score) || 0)}/100`);
+      setBar('tradeScoreBar', score, score >= 85 ? 'green' : score >= 70 ? 'green' : score >= 60 ? 'yellow' : 'red');
+      const b = state.signals.tradeScoreBreakdown || {};
+      document.getElementById('scoreBreakdown').innerHTML = [
+        ['Entry', b.entry], ['Trend', b.trend], ['Volume', b.volume],
+        ['Greeks', b.greeks], ['Silver', b.silver], ['Risk', b.risk]
+      ].map(([label, value]) => progress(label, value)).join('') + `<div class="sub">${esc(state.signals.tradeScoreInterpretation || '')}</div>`;
+    }
+
+    function renderPlanningRead(state) {
+      const rec = state.signals.contractRecommendation || {};
+      const option = rec.recommended || {};
+      const selected = contractLabel(state) || option.label || state.option.displaySymbol || state.option.selectedContractSymbol;
+      const decision = rec.finalDecision || planningRecommendation(state) || 'WAIT';
+      const qualityScore = rec.contractQuality?.score ?? option.contractScore;
+      const timingScore = rec.entryTiming?.score;
+      const mid = state.option.mid ?? option.mid;
+      if (!selected || selected === '-') {
+        setText('planningBrain', 'Select an expiration/strike or use Best Trade to build a future setup read.');
+        return;
+      }
+      const setup = rec.setupName || state.signals.activeSetup || 'Selected setup';
+      const entry = tradeEntryText(state);
+      const stats = [
+        Number.isFinite(Number(mid)) ? `mid ${money(mid)}` : null,
+        Number.isFinite(Number(state.option.delta ?? option.delta)) ? `delta ${num(state.option.delta ?? option.delta)}` : null,
+        Number.isFinite(Number(state.option.iv ?? option.iv)) ? `IV ${pct(state.option.iv ?? option.iv)}` : null,
+        Number.isFinite(Number(qualityScore)) ? `quality ${scoreText(qualityScore)}/100` : null,
+        Number.isFinite(Number(timingScore)) ? `timing ${scoreText(timingScore)}/100` : null
+      ].filter(Boolean).join(', ');
+      const reason = rec.reason || planningReason(state) || 'Waiting for cleaner setup confirmation.';
+      setText('planningBrain', `Future setup read: ${selected} is the planning contract for ${setup}. Current stance: ${decision}. ${stats ? `Contract stats: ${stats}. ` : ''}Entry logic: ${entry}. ${reason}`);
+    }
+
+    function renderWhy(state) {
+      document.getElementById('whyList').innerHTML = (state.signals.whyList || []).map(row => {
+        const cls = whyClass(row);
+        const mark = whyBadge(row, cls);
+        return `<div class="why-row"><span class="status-dot ${cls}">${mark}</span><div><strong>${esc(row.label)}</strong><div class="sub">${esc(row.detail)}</div></div><span class="why-status">${esc(row.status || '')}</span></div>`;
+      }).join('');
+    }
+
+    function whyClass(row) {
+      const status = String(row.status || '').toLowerCase();
+      if (status.match(/wait|warning|caution|mixed|neutral|context|holding|manage|trim|confirmed/)) return 'warn';
+      return row.passed ? 'ok' : '';
+    }
+
+    function whyBadge(row, cls) {
+      const status = String(row.status || '').toLowerCase();
+      if (status.includes('trim')) return 'TRIM';
+      if (status.includes('exit')) return 'EXIT';
+      if (status.includes('wait')) return 'WAIT';
+      if (status.includes('warning') || status.includes('caution')) return 'WATCH';
+      if (status.includes('mixed') || status.includes('neutral') || status.includes('context')) return 'INFO';
+      if (status.includes('holding') || status.includes('manage')) return 'HOLD';
+      if (status.includes('confirmed')) return 'CONFIRM';
+      return cls === 'ok' ? 'MET' : cls === 'warn' ? 'WATCH' : 'BLOCK';
+    }
+
+    function renderHealth(state) {
+      const trackingScore = state.market.tracking === 'In line' ? 9 : state.market.tracking === 'SLV lagging' ? 7 : state.market.tracking === 'SLV leading' ? 5 : 2;
+      document.getElementById('healthMeters').innerHTML = [
+        ['Trend', state.signals.trendScore],
+        ['Momentum', state.raw?.calculated?.momentumScore],
+        ['Volume', state.volume.volumeScore],
+        ['Silver/SLV', trackingScore],
+        ['Options', state.option.liquidityScore]
+      ].map(([label, value]) => progress(label, Number(value) * 10, `${num(value)}/10`)).join('');
+      renderPairs('flowKv', [['Institutions', state.signals.institutionalFlow], ['Volume', state.volume.volumeConfirmation]]);
+    }
+
+    function renderStrategyScores(state) {
+      const scores = state.signals.strategyScores || {};
+      const rows = [
+        ['Bull Momentum', scores.bullishCallMomentum?.score],
+        ['VWAP Bounce', scores.vwapBounce?.score],
+        ['Bear Put Spread', scores.bearishPutSpread?.score],
+        ['Bear Breakdown', scores.bearishBreakdown?.score],
+        ['No Trade', scores.noTrade?.score],
+        ['Position', scores.positionManagement?.score]
+      ];
+      document.getElementById('strategyBars').innerHTML = rows
+        .map(([label, value]) => progress(label, value, scoreText(value)))
+        .join('') + `<div class="sub">Best setup: ${esc(state.signals.activeSetup || '-')}</div>`;
+    }
+
+    function renderOdds(state) {
+      document.getElementById('oddsBars').innerHTML = (state.signals.targetOdds || []).slice(0, 9).map(row => {
+        const pctValue = Math.round((Number(row.probability) || 0) * 100);
+        return `<div class="progress-row"><span>${money(row.target)}</span><span class="bar ${pctValue >= 70 ? 'green' : pctValue >= 35 ? 'yellow' : 'red'}"><span style="width:${pctValue}%"></span></span><strong>${pctValue}%</strong></div>`;
+      }).join('') || '<div class="sub">Waiting for target odds.</div>';
+    }
+
+    function renderWatchlist(state) {
+      document.getElementById('watchlist').innerHTML = (state.raw?.calculated?.watchlist || []).map(row => {
+        return `<div class="progress-row"><span>${esc(row.symbol)}</span><strong>${money(row.price)}</strong><span class="sub">${esc(row.status || '')}</span></div>`;
+      }).join('');
+    }
+
+    function renderOptions(state) {
+      suppressSelectorEvents = true;
+      const chain = state.chain || {};
+      const expirations = chain.expirations || [];
+      const expSelect = document.getElementById('expirationSelect');
+      expSelect.innerHTML = expirations.map(exp => `<option value="${esc(exp.expiration)}">${esc(exp.expiration)} | ${exp.dte ?? '-'} DTE | ${expirationMoveText(exp, state)}</option>`).join('');
+      const pending = pendingOptionSelection && (pendingOptionSelection.staged || Date.now() - pendingOptionSelection.at < 10000) ? pendingOptionSelection : null;
+      const selectedMatchesPending = pending && optionSelectionMatchesState(pending, state);
+      if (selectedMatchesPending) pendingOptionSelection = null;
+      const effective = pending && !selectedMatchesPending ? pending : {
+        expiration: state.option.selectedExpiration,
+        type: state.option.selectedType || 'C',
+        strike: state.option.selectedStrike
+      };
+      const effectiveExpiration = expirationExists(effective.expiration, expirations) ? effective.expiration : state.option.selectedExpiration || expirations[0]?.expiration || '';
+      const effectiveType = effective.type || state.option.selectedType || 'C';
+      expSelect.value = effectiveExpiration;
+      document.getElementById('typeSelect').value = effectiveType;
+      const rowsForExp = chainRowsForValues(state, effectiveExpiration, effectiveType);
+      const strikes = [...new Set(rowsForExp.map(row => row.strike).filter(v => Number.isFinite(Number(v))))].sort((a, b) => a - b);
+      const strikeSelect = document.getElementById('strikeSelect');
+      strikeSelect.innerHTML = strikes.map(strike => `<option value="${strike}">${money(strike)}</option>`).join('');
+      const selectedStrike = chooseStrike(strikes, effective.strike ?? state.option.selectedStrike, state.market.slv);
+      strikeSelect.value = selectedStrike ?? '';
+      syncInputValue('entryOverrideInput', state.raw?.inputs?.optionEntryOverride || '');
+      renderEntryOverrideStatus(state);
+      document.getElementById('optionSymbolInput').value = state.raw?.inputs?.optionSymbol || '';
+      document.getElementById('silverMinInput').value = state.raw?.config?.expectedSilverMin ?? 45;
+      document.getElementById('silverMaxInput').value = state.raw?.config?.expectedSilverMax ?? 75;
+      suppressSelectorEvents = false;
+      renderStrikeTable(state);
+      if (pending?.staged && !selectedMatchesPending) {
+        const stagedRow = currentSelectedRow();
+        if (stagedRow) renderStagedPlanning(stagedRow);
+      }
+    }
+
+    function renderStrikeTable(state) {
+      const rows = chainRowsForSelection(state).filter(row => !Number.isFinite(Number(state.market.slv)) || Math.abs(row.strike - state.market.slv) <= 7).sort((a,b) => a.strike - b.strike);
+      const visibleQuoted = rows.filter(row => !missing(row.bid) || !missing(row.ask) || !missing(row.last)).length;
+      const visibleGreeks = rows.filter(row => !missing(row.delta) || !missing(row.gamma) || !missing(row.theta) || !missing(row.iv)).length;
+      const recommended = state.signals.contractRecommendation?.recommended || {};
+      const liveHint = state.raw?.live?.connected
+        ? 'DXLink is filling visible-row quotes/Greeks'
+        : 'Start Live to fill visible-row quotes/Greeks';
+      setText('chainStatus', `${state.chain.status || 'Option chain not loaded'} | visible quotes ${visibleQuoted}/${rows.length} | visible Greeks ${visibleGreeks}/${rows.length} | ${liveHint}${state.chain.error ? ` | ${state.chain.error}` : ''}`);
+      document.getElementById('strikeTable').innerHTML = `<thead><tr><th>Strike</th><th>Bid</th><th>Ask</th><th>Mid</th><th>Spread</th><th>Vol</th><th>OI</th><th>IV</th><th>Delta</th><th>Gamma</th><th>Theta</th><th>Liq</th><th>Why rejected</th></tr></thead><tbody>${rows.map(row => {
+        const selected = row.streamerSymbol === state.option.selectedContractSymbol || row.symbol === state.option.selectedContractSymbol;
+        const best = optionRowMatches(row, recommended);
+        const atm = Number.isFinite(Number(state.market.slv)) && Math.abs(row.strike - state.market.slv) <= 0.25;
+        return `<tr class="${selected ? 'selected' : best || row.bestForCallPlay ? 'best' : ''} ${atm ? 'atm' : ''}" data-symbol="${esc(row.streamerSymbol || row.symbol)}"><td>${money(row.strike)}</td><td>${money(row.bid)}</td><td>${money(row.ask)}</td><td>${money(row.mid)}</td><td>${pct(row.spreadPct)}</td><td>${whole(row.volume)}</td><td>${whole(row.openInterest)}</td><td>${pct(row.iv)}</td><td>${num(row.delta)}</td><td>${num(row.gamma)}</td><td>${num(row.theta)}</td><td>${num(row.liquidityScore)}</td><td>${esc(clientRejectReasons(row, state).join(', '))}</td></tr>`;
+      }).join('') || '<tr><td colspan="13">No contracts for this selection.</td></tr>'}</tbody>`;
+      document.querySelectorAll('#strikeTable tr[data-symbol]').forEach(row => row.onclick = () => selectOption(row.dataset.symbol, row.children[0]?.textContent || 'contract', optionRowBySymbol(row.dataset.symbol)));
+    }
+
+    function renderEntryOverrideStatus(state) {
+      const input = document.getElementById('entryOverrideInput');
+      const status = document.getElementById('entryOverrideStatus');
+      if (!input || !status) return;
+      const typed = input.value.trim();
+      const liveMid = state.option?.mid;
+      if (typed !== '') {
+        status.textContent = `Override active after Save Plan: model entry at ${money(Number(typed))}. Clear it and Save Plan to return to live mid.`;
+      } else {
+        status.textContent = `Blank uses live mid ${money(liveMid)} for projections. Current Tastytrade positions still use actual account cost basis.`;
+      }
+    }
+
+    function expirationMoveText(exp = {}, state = {}) {
+      const move = money(exp.impliedMove);
+      if (move === '-') {
+        const estimated = estimatedMoveFromState(exp, state);
+        return estimated === null ? 'waiting for IV' : `${money(estimated)} est move`;
+      }
+      return `${move}${exp.impliedMoveEstimated ? ' est' : ''} move`;
+    }
+
+    function estimatedMoveFromState(exp = {}, state = {}) {
+      const slv = Number(state.market?.slv);
+      const dte = Number(exp.dte);
+      if (!Number.isFinite(slv) || !Number.isFinite(dte)) return null;
+      const fallbackIv = 0.45;
+      const days = Math.max(0.5, dte);
+      return slv * fallbackIv * Math.sqrt(days / 365);
+    }
+
+    function renderContractComparison(state) {
+      const table = document.getElementById('contractComparisonTable');
+      if (!table) return;
+      const rec = state.signals.contractRecommendation || {};
+      const rows = rec.bestContracts?.length ? rec.bestContracts : rec.comparison || [];
+      table.innerHTML = `<thead><tr><th>Rank</th><th>Expiration</th><th>DTE</th><th>Strike</th><th>Type</th><th>Mid</th><th>Delta</th><th>Spread</th><th>Theta/day</th><th>Trim 1 odds</th><th>Score</th><th>Decision</th></tr></thead><tbody>${rows.map((row, index) => `<tr class="${row.rank === 1 || row.contractDecision === 'BEST' ? 'best' : ''}" data-symbol="${esc(row.streamerSymbol || row.symbol || '')}"><td>#${esc(row.rank || index + 1)}</td><td>${esc(shortDate(row.expiration))}</td><td>${esc(row.dte ?? '-')}</td><td>${money(row.strike)}</td><td>${esc(row.typeLabel || (row.type === 'P' ? 'Put' : 'Call'))}</td><td>${money(row.mid)}</td><td>${num(row.delta)}</td><td>${pct(row.spreadPct)}</td><td>${pct(thetaPct(row))}</td><td>${pct(row.trim1Probability)}</td><td>${scoreText(row.contractScore)}</td><td>${decisionPill(row.contractDecision)}</td></tr>`).join('') || '<tr><td colspan="12">No contracts meet minimum trade standards yet. Check live quotes/Greeks or refresh the chain.</td></tr>'}</tbody>`;
+      table.querySelectorAll('tr[data-symbol]').forEach(row => {
+        if (row.dataset.symbol) row.onclick = () => selectOption(row.dataset.symbol, row.children[3]?.textContent || 'contract', optionRowBySymbol(row.dataset.symbol));
+      });
+    }
+
+    function renderProjection(state) {
+      const rows = state.signals.optionProjection?.projection || [];
+      const info = planningEntryInfo(state);
+      const size = planningSizeContext(state);
+      const contracts = size.contracts;
+      setText('projectionScope', `Projection uses ${contracts} ${contracts === 1 ? 'contract' : 'contracts'} at ${money(info.entry)} ${info.overrideActive ? 'entry override' : 'live mid'}. This is a planning model, not live account P/L.`);
+      const cost = info.entry === null ? null : info.entry * contracts * 100;
+      document.getElementById('projectionTable').innerHTML = `<thead><tr><th>Scenario</th><th>Today</th><th>Tomorrow</th><th>Value</th><th>P/L</th><th>Return</th><th>Action</th><th>Notes</th></tr></thead><tbody>${rows.map(row => {
+        const todayMid = numberOrNullClient(row.todayMid);
+        const positionValue = todayMid === null ? null : todayMid * contracts * 100;
+        const pnl = cost === null || positionValue === null ? null : positionValue - cost;
+        const returnPct = cost ? pnl / cost : null;
+        return `<tr><td>If SLV reaches ${money(row.slv)}</td><td>${money(row.todayMid)}</td><td>${money(row.tomorrowMid)}</td><td>${money(positionValue)}</td><td>${money(pnl)}</td><td>${pct(returnPct)}</td><td>${badge(row.action || 'WAIT')}</td><td>${esc(row.notes || '')}</td></tr>`;
+      }).join('')}</tbody>`;
+    }
+
+    function renderPositions(state) {
+      const positions = state.positions || {};
+      const rows = positions.rows || [];
+      setText('positionsStatus', `${positions.status || 'Not loaded'}${positions.error ? ` | ${positions.error}` : ''}${positions.fetchedAt ? ` | ${new Date(positions.fetchedAt).toLocaleTimeString()}` : ''}`);
+      document.getElementById('positionsSummary').innerHTML = [
+        ['Value', money(positions.totalValue)],
+        ['P/L', money(positions.totalPnl)],
+        ['Return', pct(positions.totalReturnPct)]
+      ].map(([k, v]) => `<div class="metric"><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`).join('');
+      document.getElementById('positionsTable').innerHTML = `<thead><tr><th>Symbol</th><th>Qty</th><th>Mark</th><th>P/L</th><th>Action</th><th>Why</th></tr></thead><tbody>${rows.map(row => {
+        const display = positionRowDisplay(row, state, rows);
+        const key = positionKey(row);
+        const managed = row.managementSignal || positionRowMatchesManagement(row, state.signals.positionManagement || {}, rows);
+        return `<tr class="${managed ? 'position-managed' : ''}" data-position-key="${esc(key)}" data-position-symbol="${esc(row.symbol || '')}"><td>${esc(row.symbol)}</td><td>${num(row.quantity)}</td><td>${money(row.mark)}</td><td>${money(row.pnl)}</td><td>${badge(display.signal)}</td><td>${esc(display.reason)}</td></tr>`;
+      }).join('') || '<tr><td colspan="6">No open tastytrade positions found.</td></tr>'}</tbody>`;
+      document.querySelectorAll('#positionsTable tr[data-position-key]').forEach(row => {
+        row.onclick = () => selectManagedPosition(row.dataset.positionKey, row.dataset.positionSymbol || row.children[0]?.textContent || 'position');
+      });
+    }
+
+    function positionRowDisplay(row = {}, state = {}, rows = []) {
+      const pm = state.signals.positionManagement || {};
+      if (!positionRowMatchesManagement(row, pm, rows)) return { signal: row.signal, reason: row.reason || '' };
+      return {
+        signal: pm.signal || row.signal,
+        reason: positionManagementReason(pm) || row.reason || ''
+      };
+    }
+
+    function positionRowMatchesManagement(row = {}, pm = {}, rows = []) {
+      if (!pm.active) return false;
+      const activeRows = rows.filter(item => Math.abs(Number(item.quantity) || 0) > 0);
+      if (activeRows.length === 1) return row === activeRows[0];
+      const position = pm.position || {};
+      const rowKeys = positionKeys(row);
+      const managedKeys = positionKeys(position);
+      if (rowKeys.some(key => managedKeys.includes(key))) return true;
+      return row.expiration && position.expiration
+        && row.type === position.type
+        && Number(row.strike) === Number(position.strike);
+    }
+
+    function positionKey(row = {}) {
+      return positionKeys(row)[0] || compactSymbol(row.symbol || row.occSymbol || row.streamerSymbol || '');
+    }
+
+    function positionKeys(row = {}) {
+      return [...new Set([row.symbol, row.occSymbol, row.streamerSymbol, row.displaySymbol].map(compactSymbol).filter(Boolean))];
+    }
+
+    function positionManagementReason(pm = {}) {
+      const signal = String(pm.signal || '').trim();
+      let reason = String(pm.reason || '').trim();
+      if (!signal) return reason;
+      const upper = reason.toUpperCase();
+      const prefix = `${signal.toUpperCase()} BECAUSE `;
+      if (upper.startsWith(prefix)) reason = reason.slice(prefix.length);
+      else if (upper.startsWith(`${signal.toUpperCase()}:`)) reason = reason.slice(signal.length + 1).trim();
+      return reason ? `${signal}: ${reason}` : signal;
+    }
+
+    function suggestedTradeAction(action, positionMode) {
+      const text = String(action || 'WAIT').toUpperCase();
+      if (!positionMode) return action || 'WAIT';
+      if (text.includes('TRIM')) return 'TRIM / TAKE PROFITS';
+      if (text.includes('EXIT')) return 'EXIT / CUT RISK';
+      if (text.includes('ROLL')) return 'ROLL / EXTEND TIME';
+      if (text.includes('ADD')) return 'ADD / SCALE IN';
+      if (text.includes('HOLD')) return 'HOLD POSITION';
+      return action || 'WAIT';
+    }
+
+    function commandManagementPlan(state, pm = {}) {
+      const m = state.signals.mission || {};
+      const position = pm.position || {};
+      const levels = pm.levels || m.levels || {};
+      const signal = String(pm.signal || m.recommendation || 'WAIT').toUpperCase();
+      const qty = absNumber(position.contracts ?? position.quantity ?? m.positionSize);
+      const entry = numberOrNullClient(m.entryPrice ?? position.entryPrice);
+      const mid = numberOrNullClient(m.currentMid ?? position.currentMid);
+      const costBasis = numberOrNullClient(position.costBasis ?? m.costBasis);
+      const currentPnl = numberOrNullClient(position.pnl ?? m.livePnl);
+      const currentReturn = numberOrNullClient(position.returnPct ?? m.liveReturnPct);
+      const multiplier = numberOrNullClient(position.multiplier) ?? 100;
+      const trimMore = signal.includes('TRIM MORE');
+      const trimAny = signal.includes('TRIM');
+      const targetOption = trimMore
+        ? numberOrNullClient(levels.trim2Option ?? levels.runnerOption ?? levels.trim1Option)
+        : trimAny
+          ? numberOrNullClient(levels.trim1Option ?? levels.trim2Option)
+          : numberOrNullClient(levels.exitBelowOption);
+      const targetSlv = trimMore
+        ? numberOrNullClient(levels.trim2SLV ?? levels.runnerSLV ?? levels.trim1SLV)
+        : trimAny
+          ? numberOrNullClient(levels.trim1SLV ?? levels.trim2SLV)
+          : numberOrNullClient(levels.stopSLV);
+      const targetPnl = targetProfit(entry, targetOption, qty, multiplier);
+      const targetReturn = costBasis && targetPnl !== null ? targetPnl / costBasis : null;
+      const targetName = trimMore ? 'Trim 2' : trimAny ? 'Trim 1' : signal.includes('EXIT') ? 'Exit' : 'Manage';
+      const targetHit = trimAny && mid !== null && targetOption !== null && mid >= targetOption;
+      const quantityLabel = qty === null ? '-' : `${whole(qty)} contract${qty === 1 ? '' : 's'}`;
+      const profitLabel = `${money(currentPnl)} ${pct(currentReturn)}`.trim();
+      const exitLabel = trimAny
+        ? `${money(targetSlv)} / ${money(targetOption)}`
+        : `${money(levels.stopSLV)} / ${money(levels.exitBelowOption)}`;
+      let reason;
+      if (trimAny) {
+        const takeProfit = targetHit
+          ? `Take profits now near option mid ${money(mid)}; ${targetName} target ${money(targetOption)} is already hit.`
+          : `Take profits into ${targetName} at SLV ${money(targetSlv)} or option ${money(targetOption)}.`;
+        const profit = targetHit || targetPnl === null
+          ? `Current profit is ${money(currentPnl)} (${pct(currentReturn)}) on ${quantityLabel}.`
+          : `Estimated profit at target is ${money(targetPnl)} (${pct(targetReturn)}) on ${quantityLabel}.`;
+        reason = `${takeProfit} ${profit} Hard exit stays below option ${money(levels.exitBelowOption)} or SLV ${money(levels.stopSLV)}.`;
+      } else if (signal.includes('EXIT')) {
+        reason = `Exit/cut risk below SLV ${money(levels.stopSLV)} or option ${money(levels.exitBelowOption)}. Current P/L is ${money(currentPnl)} (${pct(currentReturn)}) on ${quantityLabel}.`;
+      } else if (signal.includes('ROLL')) {
+        reason = `Roll/extend time only if the thesis still holds; risk-off is below SLV ${money(levels.stopSLV)} or option ${money(levels.exitBelowOption)}. Current P/L is ${money(currentPnl)} (${pct(currentReturn)}) on ${quantityLabel}.`;
+      } else {
+        reason = `${pm.reason || 'Manage the open position.'} Current P/L is ${money(currentPnl)} (${pct(currentReturn)}) on ${quantityLabel}; exit below SLV ${money(levels.stopSLV)} or option ${money(levels.exitBelowOption)}.`;
+      }
+      return {
+        positionLabel: position.label || m.selected || 'Active position',
+        quantityLabel,
+        profitLabel,
+        exitLabel,
+        reason
+      };
+    }
+
+    function numberOrNullClient(value) {
+      if (missing(value)) return null;
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function absNumber(value) {
+      const n = numberOrNullClient(value);
+      return n === null ? null : Math.abs(n);
+    }
+
+    function targetProfit(entry, targetOption, qty, multiplier = 100) {
+      if (entry === null || targetOption === null || qty === null) return null;
+      return (targetOption - entry) * qty * multiplier;
+    }
+
+    function renderPositionRules(state) {
+      const pm = state.signals.positionManagement || {};
+      const levels = pm.levels || {};
+      const lines = pm.active
+        ? [
+            `${pm.signal || 'WAIT'} is driven by live P/L, VWAP, triggers, DTE, theta, spread, and trim targets.`,
+            `Exit below option mid ${money(levels.exitBelowOption)} or SLV stop ${money(levels.stopSLV)}.`,
+            `Trim at ${money(levels.trim1SLV)} / ${money(levels.trim2SLV)} or option ${money(levels.trim1Option)} / ${money(levels.trim2Option)}.`,
+            `Roll only if thesis remains valid but DTE/theta risk is too high.`
+          ]
+        : [
+            'No active tastytrade position is open.',
+            'Live exit, trim, hold, and roll rules will appear here once a position is detected.'
+          ];
+      setText('positionRules', lines.join(' '));
+    }
+
+    function renderTimeline(state) {
+      const rows = state.history.actionTimeline || [];
+      document.getElementById('timeline').innerHTML = rows.slice(-12).reverse().map(row => `<div class="timeline-row"><span>${new Date(row.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span><strong>${esc(row.action)}</strong><span>${esc(row.activeSetup || 'Setup')} | SLV ${money(row.slvPrice)} | Trade ${scoreText(row.tradeScore)} | P/L ${money(row.positionPnl)}<div class="sub">${esc(row.reason || '')}</div></span><span>Mid ${money(row.selectedOptionMid)}</span></div>`).join('') || '<div class="sub">Timeline starts when signals change.</div>';
+    }
+
+    function renderBacktest(state) {
+      const report = state.raw?.calculated?.backtestReport || {};
+      document.getElementById('backtest').innerHTML = `<div class="sub">Snapshots collected: ${report.snapshotCount || 0}</div>` + (report.reports || []).map(row => `<div class="progress-row"><span>${esc(row.label)}</span><span class="bar"><span style="width:15%"></span></span><strong>${esc(row.status)}</strong></div>`).join('');
+    }
+
+    function renderDiagnostics(state) {
+      const raw = state.raw || {};
+      renderPairs('diagnosticsKv', [
+        ['OAuth configured', raw.auth?.oauthConfigured ? 'Yes' : 'No'],
+        ['OAuth connected', raw.auth?.oauthAuthenticated ? 'Yes' : 'No'],
+        ['Token expiry', raw.auth?.tokenExpiresAt ? new Date(raw.auth.tokenExpiresAt).toLocaleString() : ''],
+        ['DXLink', raw.live?.status],
+        ['Subscribed', (raw.live?.requestedSymbols || []).slice(0, 30).join(', ')],
+        ['Last error', raw.live?.lastError],
+        ['Option chain', state.chain.status],
+        ['Positions', state.positions.status],
+        ['Silver provider', raw.calculated?.silver?.source || 'MetalPriceAPI'],
+        ['Silver timestamp', raw.calculated?.silver?.timestamp ? new Date(raw.calculated.silver.timestamp).toLocaleString() : '-'],
+        ['Silver validation', raw.calculated?.silver?.valid ? 'Valid' : 'Invalid'],
+        ['Silver error', raw.calculated?.silver?.error || raw.calculated?.silver?.reason]
+      ]);
+      document.getElementById('diagnosticsRaw').textContent = JSON.stringify({ auth: raw.auth, live: raw.live, sources: raw.marketDataSources, diagnostics: raw.calculated?.diagnosticsSummary }, null, 2);
+    }
+
+    function drawChart(state) {
+      const canvas = document.getElementById('chart');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#070d16';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const rows = state.history.chart?.length ? state.history.chart : [{ slv: state.market.slv, spot: state.market.silver, volume: state.volume.currentVolume, bull: state.levels.bullTrigger, bear: state.levels.bearTrigger, vwap: state.levels.vwap }];
+      const values = rows.flatMap(r => [r.slv, r.bull, r.bear, r.vwap]).map(Number).filter(Number.isFinite);
+      if (!values.length) { ctx.fillStyle = '#93a4bb'; ctx.font = '18px sans-serif'; ctx.fillText('Waiting for SLV snapshots.', 28, 160); return; }
+      const min = Math.min(...values), max = Math.max(...values);
+      const x = i => 44 + i * ((canvas.width - 88) / Math.max(rows.length - 1, 1));
+      const y = v => 245 - ((Number(v) - min) / Math.max(max - min, .01)) * 205;
+      const volMax = Math.max(...rows.map(r => Number(r.volume) || 0), 1);
+      rows.forEach((r, i) => { const h = ((Number(r.volume) || 0) / volMax) * 50; ctx.fillStyle = '#1e40af'; ctx.fillRect(x(i) - 3, 300 - h, 6, h); });
+      line(rows.map(r => r.slv), '#22c55e', x, y, 3);
+      line(rows.map(r => r.vwap), '#67e8f9', x, y, 1, [5,5]);
+      line(rows.map(r => r.bull), '#facc15', x, y, 1, [7,5]);
+      line(rows.map(r => r.bear), '#ef4444', x, y, 1, [7,5]);
+      if (state.market.silverValid) line(normalizedOverlay(rows.map(r => r.spot), values), '#fb923c', x, y, 1, [2,4]);
+    }
+
+    function onOptionSelectorChange(event) {
+      if (suppressSelectorEvents) return;
+      const changed = event?.target?.id;
+      if (changed === 'expirationSelect' || changed === 'typeSelect') {
+        syncStrikeSelectForCurrentSelectors();
+      }
+      stageCurrentContract();
+    }
+
+    function selectCurrentContract() {
+      const row = currentSelectedRow();
+      if (!row) return toast('Error: no contract for current selection', 'error');
+      selectOption(row.streamerSymbol || row.symbol, row.displaySymbol || row.streamerSymbol || 'contract', row);
+    }
+
+    function stageCurrentContract() {
+      const row = currentSelectedRow();
+      if (!row) return toast('Choose an expiration with available strikes, then click Select Contract.', 'warn');
+      pendingOptionSelection = {
+        expiration: row.expiration,
+        type: row.type,
+        strike: row.strike,
+        symbol: row.streamerSymbol || row.symbol,
+        staged: true,
+        at: Date.now()
+      };
+      applySelectorValues(pendingOptionSelection);
+      renderStagedPlanning(row);
+      toast(`Staged ${row.displaySymbol || row.streamerSymbol || 'contract'} - click Select Contract to lock it`, 'success');
+    }
+
+    function renderStagedPlanning(row) {
+      const label = row.displaySymbol || `${row.expiration} ${money(row.strike)} ${row.type === 'P' ? 'Put' : 'Call'}`;
+      setText('missionSelected', `Staged: ${label}`);
+      setText('missionRecommendation', 'NOT LOCKED');
+      setText('missionPnl', 'Click Select Contract');
+      setText('missionReason', 'Dropdown choice is staged only. Click Select Contract to rebuild the trade plan, projections, score, and target odds for this contract.');
+      const liveMid = numberOrNullClient(row.mid ?? row.last);
+      const typedContracts = planningContractsValue(true);
+      const entry = planningEntryInfo(TradeState).entry ?? liveMid;
+      const debit = entry === null ? null : entry * typedContracts * 100;
+      setText('planningAssumptionStatus', `Staged ${label}. Planning ${typedContracts} contracts at ${money(entry)}. Modeled debit/risk: ${money(debit)}. Click Select Contract to lock and recalculate the full plan.`);
+      renderPairs('missionKv', [
+        ['Expiration', expirationLabel(row.expiration, row.dte)],
+        ['Strike / Type', `${money(row.strike)} ${row.type === 'P' ? 'Put' : 'Call'}`],
+        ['Bid / Ask', `${money(row.bid)} / ${money(row.ask)}`],
+        ['Mid / Spread', `${money(liveMid)} / ${pct(row.spreadPct)}`],
+        ['Delta / Gamma', `${num(row.delta)} / ${num(row.gamma)}`],
+        ['Theta / IV', `${money(row.theta)} / ${pct(row.iv)}`]
+      ]);
+    }
+
+    function autoSelect(mode) {
+      if (mode === 'best') {
+        const recommended = TradeState.signals.contractRecommendation?.recommended;
+        const symbol = recommended?.streamerSymbol || recommended?.symbol;
+        if (symbol) return selectOption(symbol, recommended.label || 'best contract', recommended);
+      }
+      const rows = chainRowsForSelection(TradeState).filter(row => Number.isFinite(Number(row.strike)));
+      if (!rows.length) return toast('Error: option chain unavailable', 'error');
+      const slv = Number(TradeState.market.slv);
+      let row;
+      if (mode === 'best') {
+        row = [...rows].sort((a, b) => bestTradeScore(b, slv) - bestTradeScore(a, slv))[0];
+      } else {
+        row = [...rows].sort((a, b) => Math.abs(a.strike - slv) - Math.abs(b.strike - slv))[0];
+      }
+      if (row) selectOption(row.streamerSymbol || row.symbol, `${row.expiration} ${money(row.strike)}${row.type}`, row);
+    }
+
+    async function selectOption(symbol, label = 'contract', row = null) {
+      const selectedRow = row || optionRowBySymbol(symbol);
+      if (selectedRow) {
+        pendingOptionSelection = {
+          expiration: selectedRow.expiration,
+          type: selectedRow.type,
+          strike: selectedRow.strike,
+          symbol: selectedRow.streamerSymbol || selectedRow.symbol,
+          at: Date.now()
+        };
+        applySelectorValues(pendingOptionSelection);
+      }
+      await runAction('selectContractBtn', '/api/options/select', { symbol }, `Selected ${label}`);
+    }
+
+    async function selectManagedPosition(positionKeyValue, label = 'position', clear = false) {
+      if (!positionKeyValue && !clear) return toast('Error: missing position key', 'error');
+      try {
+        const res = await fetch(apiUrl('/api/tastytrade/positions/select'), {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ positionKey: positionKeyValue, symbol: label, clear })
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || 'Position selection failed');
+        setTradeState(data.payload || data, { source: 'position-select' });
+        toast(clear ? 'Managing largest open SLV position by default' : `Managing ${label}`, 'success');
+      } catch (error) {
+        toast(`Error: ${error.message}`, 'error');
+      }
+    }
+
+    function updateSize() {
+      const contracts = planningContractsValue(true);
+      const input = document.getElementById('contractsInput');
+      if (input) input.value = String(contracts);
+      renderPlanningAssumptions(TradeState);
+      runAction('updateSizeBtn', '/api/inputs', { inputs: { contracts }, autoLog: false }, `Planning size updated to ${contracts} ${contracts === 1 ? 'contract' : 'contracts'}`);
+    }
+
+    function trackPosition() {
+      const contracts = planningContractsValue(true);
+      runAction('trackPositionBtn', '/api/inputs', { inputs: { trackPosition: true, contracts }, autoLog: false }, 'Paper plan tracking enabled');
+    }
+
+    function savePlan() {
+      const inputs = {
+        contracts: planningContractsValue(true),
+        optionEntryOverride: document.getElementById('entryOverrideInput').value === '' ? '' : Number(document.getElementById('entryOverrideInput').value)
+      };
+      runAction('savePlanBtn', '/api/inputs', { inputs, autoLog: false }, 'Planning assumptions saved - no order placed');
+    }
+
+    function saveSettings() {
+      const inputs = { optionSymbol: document.getElementById('optionSymbolInput').value.trim() };
+      const config = {
+        expectedSilverMin: Number(document.getElementById('silverMinInput').value || 45),
+        expectedSilverMax: Number(document.getElementById('silverMaxInput').value || 75)
+      };
+      runAction('saveSettingsBtn', '/api/inputs', { inputs, config, autoLog: false }, 'Settings saved');
+    }
+
+    function toggleAlerts() {
+      alertsEnabled = !alertsEnabled;
+      toast(`Alerts ${alertsEnabled ? 'enabled' : 'muted'}`, alertsEnabled ? 'success' : 'warn');
+    }
+
+    function maybeAlert(source) {
+      const s = TradeState.signals;
+      const m = TradeState.market;
+      const l = TradeState.levels;
+      const o = TradeState.option;
+      const current = {
+        bullishCall: Number(s.bullishCallScore) || 0,
+        score: Number(s.tradeScore) || 0,
+        entryTiming: Number(s.contractRecommendation?.entryTiming?.score) || 0,
+        contractScore: Number(s.contractRecommendation?.contractQuality?.score) || 0,
+        slv: Number(m.slv),
+        bull: Number(l.bullTrigger),
+        bear: Number(l.bearTrigger),
+        vwap: Number(l.vwap),
+        trim1: Number(l.trim1),
+        trim2: Number(l.trim2),
+        positionReturn: Number(s.positionManagement?.position?.returnPct),
+        spread: Number(o.mid ? (o.ask - o.bid) / o.mid : o.spreadPct),
+        quality: m.dataQuality
+      };
+      if (!previousAlertState) { previousAlertState = current; return; }
+      if (!alertsEnabled || source === 'stream') { previousAlertState = current; return; }
+      if (previousAlertState.bullishCall < 70 && current.bullishCall >= 70) toast('Bullish Call setup crossed above 70', 'success');
+      if (previousAlertState.score < 70 && current.score >= 70) toast('Trade Score crossed above 70', 'success');
+      if (previousAlertState.score < 85 && current.score >= 85) toast('Trade Score crossed above 85', 'success');
+      if (previousAlertState.entryTiming < 75 && current.entryTiming >= 75) toast('Entry timing crossed above 75', 'success');
+      if (previousAlertState.contractScore < 75 && current.contractScore >= 75) toast('Contract quality crossed above 75', 'success');
+      if (previousAlertState.slv <= previousAlertState.vwap && current.slv > current.vwap) toast('SLV reclaimed VWAP', 'success');
+      if (previousAlertState.slv <= previousAlertState.bull && current.slv > current.bull) toast('SLV reclaimed bull trigger', 'success');
+      if (previousAlertState.slv >= previousAlertState.bear && current.slv < current.bear) toast('SLV crossed below bear trigger', 'warn');
+      if (previousAlertState.slv >= previousAlertState.vwap && current.slv < current.vwap) toast('SLV lost VWAP', 'warn');
+      if (previousAlertState.slv < previousAlertState.trim1 && current.slv >= current.trim1) toast('Trim 1 reached', 'success');
+      if (previousAlertState.slv < previousAlertState.trim2 && current.slv >= current.trim2) toast('Trim 2 reached', 'success');
+      if (previousAlertState.positionReturn > -0.35 && current.positionReturn <= -0.35) toast('Position hit -35%', 'warn');
+      if (previousAlertState.positionReturn > -0.50 && current.positionReturn <= -0.50) toast('Position hit -50%', 'error');
+      if (previousAlertState.positionReturn < 0.40 && current.positionReturn >= 0.40) toast('Position hit +40%', 'success');
+      if (current.spread > 0.20) toast('Option spread became too wide', 'warn');
+      if (previousAlertState.quality !== 'BAD' && current.quality === 'BAD') toast('Data quality warning: BAD', 'error');
+      previousAlertState = current;
+    }
+
+    function chainRowsForSelection(state, options = {}) {
+      const exp = document.getElementById('expirationSelect')?.value || state.option.selectedExpiration;
+      const type = document.getElementById('typeSelect')?.value || state.option.selectedType || 'C';
+      return chainRowsForValues(state, exp, type);
+    }
+
+    function chainRowsForValues(state, expiration, type) {
+      return (state.chain.options || []).filter(row => row.expiration === expiration && row.type === type);
+    }
+
+    function currentSelectedRow() {
+      const exp = document.getElementById('expirationSelect').value;
+      const type = document.getElementById('typeSelect').value;
+      const strike = Number(document.getElementById('strikeSelect').value);
+      const rows = chainRowsForValues(TradeState, exp, type);
+      return rows.find(row => Number(row.strike) === strike) || nearestStrikeRow(rows, strike || TradeState.market.slv);
+    }
+
+    function syncStrikeSelectForCurrentSelectors() {
+      const exp = document.getElementById('expirationSelect').value;
+      const type = document.getElementById('typeSelect').value;
+      const strikeSelect = document.getElementById('strikeSelect');
+      const previousStrike = Number(strikeSelect.value || TradeState.option.selectedStrike || TradeState.market.slv);
+      const rows = chainRowsForValues(TradeState, exp, type);
+      const strikes = [...new Set(rows.map(row => row.strike).filter(v => Number.isFinite(Number(v))))].sort((a, b) => a - b);
+      const nextStrike = chooseStrike(strikes, previousStrike, TradeState.market.slv);
+      suppressSelectorEvents = true;
+      strikeSelect.innerHTML = strikes.map(strike => `<option value="${strike}">${money(strike)}</option>`).join('');
+      strikeSelect.value = nextStrike ?? '';
+      suppressSelectorEvents = false;
+    }
+
+    function chooseStrike(strikes, preferred, fallback) {
+      if (!strikes.length) return '';
+      const preferredNumber = Number(preferred);
+      if (Number.isFinite(preferredNumber) && strikes.some(strike => Number(strike) === preferredNumber)) return preferredNumber;
+      const target = Number.isFinite(preferredNumber) ? preferredNumber : Number(fallback);
+      if (!Number.isFinite(target)) return strikes[0];
+      return [...strikes].sort((a, b) => Math.abs(Number(a) - target) - Math.abs(Number(b) - target))[0];
+    }
+
+    function nearestStrikeRow(rows, target) {
+      const t = Number(target);
+      if (!rows.length || !Number.isFinite(t)) return rows[0] || null;
+      return [...rows].sort((a, b) => Math.abs(Number(a.strike) - t) - Math.abs(Number(b.strike) - t))[0] || null;
+    }
+
+    function optionRowBySymbol(symbol) {
+      const key = compactSymbol(symbol);
+      return (TradeState.chain.options || []).find(row => [row.streamerSymbol, row.symbol, row.occSymbol, row.displaySymbol].map(compactSymbol).includes(key)) || null;
+    }
+
+    function expirationExists(expiration, expirations) {
+      return Boolean(expiration && (expirations || []).some(exp => exp.expiration === expiration));
+    }
+
+    function optionSelectionMatchesState(selection, state) {
+      if (!selection) return false;
+      const option = state.option || {};
+      const selectedKeys = [option.selectedContractSymbol, option.displaySymbol].map(compactSymbol).filter(Boolean);
+      const pendingKey = compactSymbol(selection.symbol);
+      if (pendingKey && selectedKeys.includes(pendingKey)) return true;
+      return option.selectedExpiration === selection.expiration
+        && option.selectedType === selection.type
+        && Number(option.selectedStrike) === Number(selection.strike);
+    }
+
+    function applySelectorValues(selection) {
+      if (!selection) return;
+      suppressSelectorEvents = true;
+      const expSelect = document.getElementById('expirationSelect');
+      const typeSelect = document.getElementById('typeSelect');
+      if (expSelect && selection.expiration) expSelect.value = selection.expiration;
+      if (typeSelect && selection.type) typeSelect.value = selection.type;
+      syncStrikeSelectForCurrentSelectors();
+      const strikeSelect = document.getElementById('strikeSelect');
+      if (strikeSelect && !missing(selection.strike)) strikeSelect.value = selection.strike;
+      suppressSelectorEvents = false;
+    }
+
+    function bestTradeScore(row, slv) {
+      let score = 0;
+      const delta = Math.abs(Number(row.delta) || 0);
+      const spread = Number(row.spreadPct);
+      if (delta >= .35 && delta <= .65) score += 35;
+      if (Number.isFinite(spread) && spread < .12) score += 25;
+      if ((Number(row.volume) || 0) > 100) score += 12;
+      if ((Number(row.openInterest) || 0) > 500) score += 12;
+      if (Number.isFinite(slv)) score += Math.max(0, 16 - Math.abs(row.strike - slv) * 4);
+      if ((row.dte ?? 99) >= 1 && (row.dte ?? 99) <= 14) score += 10;
+      return score;
+    }
+
+    function thetaPct(row) {
+      const mid = Number(row?.mid);
+      const theta = Math.abs(Number(row?.theta));
+      return Number.isFinite(mid) && mid > 0 && Number.isFinite(theta) ? theta / mid : null;
+    }
+
+    function clientRejectReasons(row, state) {
+      const reasons = [];
+      const bid = Number(row.bid);
+      const ask = Number(row.ask);
+      const mid = Number(row.mid);
+      const spread = Number(row.spreadPct);
+      const deltaAbs = Math.abs(Number(row.delta));
+      const dte = Number(row.dte);
+      const slv = Number(state.market.slv);
+      if (!Number.isFinite(bid) || bid <= 0) reasons.push('Zero/missing bid');
+      if (!Number.isFinite(ask) || ask <= 0) reasons.push('Zero/missing ask');
+      if (!Number.isFinite(mid) || mid <= 0) reasons.push('Missing mid');
+      if (!Number.isFinite(spread)) reasons.push('Missing spread');
+      else if (spread > .25) reasons.push('Spread over 25%');
+      else if (spread > .15) reasons.push('Spread over 15%');
+      if (missing(row.delta) || missing(row.gamma) || missing(row.theta)) reasons.push('Missing Greeks');
+      if (!Number.isFinite(dte)) reasons.push('Missing DTE');
+      else if (dte < 2) reasons.push('Too little DTE');
+      else if (dte > 14) reasons.push('Too much DTE');
+      if (!Number.isFinite(deltaAbs) || deltaAbs < .30 || deltaAbs > .70) reasons.push('Delta outside 0.30-0.70');
+      if ((Number(row.volume) || 0) <= 0 && (Number(row.openInterest) || 0) <= 0) reasons.push('Illiquid');
+      if (Number.isFinite(slv) && Number.isFinite(Number(row.strike)) && Math.abs(Number(row.strike) - slv) > 5) reasons.push('Far from SLV');
+      return reasons.slice(0, 4);
+    }
+
+    function tradeEntryText(state) {
+      if (state.signals.actionSignal === 'ENTER CALLS') return `${money(state.levels.bullTrigger)} to ${money(Number(state.levels.bullTrigger) + .20)} SLV`;
+      if (String(state.signals.actionSignal || '').startsWith('ENTER PUT')) return `Below ${money(state.levels.bearTrigger)} and under VWAP`;
+      return `Wait for SLV over ${money(state.levels.bullTrigger)} and above VWAP`;
+    }
+
+    function planningSetup(state) {
+      const best = state.signals.bestSetup || {};
+      return best.id === 'positionManagement' ? best.secondarySetup || {} : best;
+    }
+
+    function planningRecommendation(state) {
+      const setup = planningSetup(state);
+      const option = state.option || {};
+      if (!option.selectedContractSymbol && !option.displaySymbol) return 'SELECT CONTRACT';
+      if (state.market.dataQuality === 'BAD') return 'DATA BLOCKED';
+      if (setup.action === 'ENTER CALLS') return 'READY CALLS';
+      if (String(setup.action || '').startsWith('ENTER PUT')) return 'READY PUTS';
+      if (setup.action === 'AVOID') return 'AVOID';
+      if (setup.action === 'WAIT') return 'WAIT';
+      return state.market.dataQuality === 'WARNING' ? 'WATCH' : 'PLAN';
+    }
+
+    function planningReason(state) {
+      const setup = planningSetup(state);
+      const status = planningRecommendation(state);
+      if (status === 'DATA BLOCKED') return `${commandReason(state)} This is a planning view only; trim/exit decisions belong in Current Position Monitor.`;
+      if (status === 'READY CALLS' || status === 'READY PUTS') return `${setup.name || 'Selected setup'} is ready for planning: ${setup.reason || state.signals.reason || '-'}`;
+      if (status === 'WAIT') return `${setup.name || 'Selected setup'} is not confirmed yet: ${setup.reason || state.signals.reason || '-'}`;
+      if (status === 'AVOID') return `${setup.name || 'Selected setup'} is not tradable right now: ${setup.reason || state.signals.reason || '-'}`;
+      return `Planning estimate only for ${contractLabel(state)}. Position HOLD/TRIM/EXIT signals are shown in Current Position Monitor.`;
+    }
+
+    function contractLabel(state) {
+      const option = state.option || {};
+      const exp = option.selectedExpiration ? shortDate(option.selectedExpiration) : null;
+      const strike = money(option.selectedStrike);
+      const type = option.selectedType === 'P' ? 'Put' : option.selectedType === 'C' ? 'Call' : '';
+      if (!exp && missing(option.selectedStrike)) return option.displaySymbol || option.selectedContractSymbol || '-';
+      return `SLV ${exp || 'no date'} ${strike} ${type}`.trim();
+    }
+
+    function expirationLabel(expiration, dte) {
+      const date = expiration ? longDate(expiration) : '-';
+      const dteText = missing(dte) ? '' : ` (${Math.round(Number(dte))} DTE)`;
+      return `${date}${dteText}`;
+    }
+
+    function shortDate(value) {
+      const date = parseIsoDate(value);
+      return date ? date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : String(value || '-');
+    }
+
+    function longDate(value) {
+      const date = parseIsoDate(value);
+      return date ? date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : String(value || '-');
+    }
+
+    function parseIsoDate(value) {
+      if (!value) return null;
+      const date = new Date(`${value}T00:00:00Z`);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function commandReason(state) {
+      if (state.market.dataQuality !== 'BAD') return state.signals.reason || '-';
+      const issues = [];
+      const raw = state.raw || {};
+      const option = state.option || {};
+      if (!raw.live?.connected) issues.push('DXLink live feed is offline');
+      if (missing(state.market.slvBid) || missing(state.market.slvAsk)) issues.push('SLV bid/ask is missing');
+      if (!state.market.silverValid) issues.push('silver feed is invalid');
+      if (missing(option.bid) || missing(option.ask) || missing(option.mid)) issues.push('selected option quote is missing');
+      if (missing(option.delta) || missing(option.theta) || missing(option.iv)) issues.push('selected option Greeks are missing');
+      const backendReason = raw.calculated?.dataQuality?.reason;
+      return `Data BAD: ${issues.length ? issues.join('; ') : backendReason || 'SLV/options unavailable or stale'}. Start Live or refresh positions/chain before taking a new entry.`;
+    }
+
+    function trackingInterpretation(status, diff) {
+      if (!status || status === 'Silver feed invalid') return 'Silver feed invalid';
+      const abs = Number.isFinite(diff) ? `${money(Math.abs(diff))}` : '-';
+      if (status === 'SLV lagging') return `SLV lagging by ${abs} - bullish catch-up`;
+      if (status === 'SLV leading') return `SLV leading by ${abs} - caution`;
+      return `In line ${abs}`;
+    }
+
+    function shortLevelLabel(label) {
+      const text = String(label || '');
+      return text
+        .replace(' Trigger', '')
+        .replace('Current SLV', 'Current')
+        .replace('Bear', 'Bear')
+        .replace('Bull', 'Bull');
+    }
+
+    function positionGauge(current, bear, bull) {
+      const min = Math.min(bear ?? current ?? 0, current ?? 0, bull ?? current ?? 0);
+      const max = Math.max(bear ?? current ?? 1, current ?? 1, bull ?? current ?? 1);
+      const pos = value => `${Math.max(2, Math.min(98, ((value - min) / Math.max(.01, max - min)) * 100))}%`;
+      document.getElementById('bearMarker').style.left = pos(bear ?? min);
+      document.getElementById('currentMarker').style.left = pos(current ?? min);
+      document.getElementById('bullMarker').style.left = pos(bull ?? max);
+    }
+
+    function progress(label, value, display) {
+      const n = Math.max(0, Math.min(100, Number(value) || 0));
+      const cls = n >= 70 ? 'green' : n >= 40 ? 'yellow' : 'red';
+      return `<div class="progress-row"><span>${esc(label)}</span><span class="bar ${cls}"><span style="width:${n}%"></span></span><strong>${esc(display || `${Math.round(n)}`)}</strong></div>`;
+    }
+
+    function setBar(id, value, cls) {
+      const el = document.getElementById(id);
+      const n = Math.max(0, Math.min(100, Number(value) || 0));
+      el.className = `bar ${cls || (n >= 70 ? 'green' : n >= 40 ? 'yellow' : 'red')}`;
+      el.querySelector('span').style.width = `${n}%`;
+    }
+
+    function syncInputValue(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const next = String(value ?? '');
+      el.dataset.stateValue = next;
+      if (document.activeElement === el) return;
+      if (el.value !== next) el.value = next;
+    }
+
+    function line(values, color, x, y, width = 2, dash = []) {
+      const ctx = document.getElementById('chart').getContext('2d');
+      ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash);
+      values.forEach((v, i) => { if (!Number.isFinite(Number(v))) return; i ? ctx.lineTo(x(i), y(v)) : ctx.moveTo(x(i), y(v)); });
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    function normalizedOverlay(values, priceValues) {
+      const clean = values.map(Number).filter(Number.isFinite);
+      if (!clean.length) return [];
+      const minSpot = Math.min(...clean), maxSpot = Math.max(...clean);
+      const minPrice = Math.min(...priceValues), maxPrice = Math.max(...priceValues);
+      return values.map(value => Number.isFinite(Number(value)) ? minPrice + ((value - minSpot) / Math.max(.01, maxSpot - minSpot)) * (maxPrice - minPrice) : null);
+    }
+
+    function setLoading(id, loading) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.disabled = loading;
+      if (!el.dataset.label) el.dataset.label = el.textContent;
+      el.textContent = loading ? 'Working...' : el.dataset.label;
+    }
+
+    function toast(message, type = '') {
+      const stack = document.getElementById('toastStack');
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.textContent = message;
+      stack.appendChild(el);
+      setTimeout(() => el.remove(), 4200);
+    }
+
+    function renderPairs(id, rows) {
+      document.getElementById(id).innerHTML = rows.map(([k, v]) => `<div class="label">${esc(k ?? '')}</div><div class="value">${esc(v ?? '')}</div>`).join('');
+    }
+
+    function decisionPill(decision) {
+      const text = String(decision || '-').toUpperCase();
+      const cls = text.includes('BUY') ? 'buy'
+        : text.includes('BEST') ? 'best'
+        : text.includes('GOOD') ? 'good'
+        : text.includes('TRIM') ? 'trim'
+        : text.includes('EXIT') ? 'exit'
+        : text.includes('AVOID') ? 'avoid'
+        : 'wait';
+      return `<span class="decision-pill ${cls}">${esc(text)}</span>`;
+    }
+
+    function optionRowMatches(row = {}, option = {}) {
+      if (!option) return false;
+      const symbols = [option.streamerSymbol, option.symbol, option.occSymbol, option.displaySymbol].filter(Boolean);
+      if (symbols.includes(row.streamerSymbol) || symbols.includes(row.symbol) || symbols.includes(row.occSymbol)) return true;
+      return row.expiration === option.expiration && row.type === option.type && Number(row.strike) === Number(option.strike);
+    }
+
+    function badge(signal) {
+      const text = signal || 'HOLD';
+      const cls = text.includes('ADD') || text.includes('ENTER') ? 'add' : text.includes('TRIM') || text.includes('ROLL') ? 'trim' : text.includes('EXIT') || text.includes('AVOID') ? 'exit' : 'hold';
+      return `<span class="badge ${cls}">${esc(text)}</span>`;
+    }
+
+    function probabilityFromLetter(letter) { return letter === 'A' ? 90 : letter === 'B' ? 72 : letter === 'C' ? 55 : 35; }
+    function actionClass(action) {
+      const text = String(action || '');
+      if (text === 'ENTER CALLS' || text === 'ADD' || text === 'HOLD') return 'bullish';
+      if (text.startsWith('ENTER PUT')) return 'bearish';
+      if (text.includes('EXIT') || text === 'AVOID') return 'avoid';
+      if (text.includes('TRIM') || text === 'ROLL') return 'neutral';
+      return 'neutral';
+    }
+    function bind(id, handler, event = 'click') { const el = document.getElementById(id); if (el) el.addEventListener(event, handler); }
+    function setText(id, value) { const el = document.getElementById(id); if (el) el.textContent = value ?? ''; }
+    function className(id, value) { const el = document.getElementById(id); if (el) el.className = value; }
+    function missing(v) { return v === null || v === undefined || v === '' || Number.isNaN(v); }
+    function money(v) { if (missing(v)) return '-'; const n = Number(v); return Number.isFinite(n) ? `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : String(v); }
+    function whole(v) { if (missing(v)) return '-'; const n = Number(v); return Number.isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 0 }) : String(v); }
+    function pct(v) { if (missing(v)) return '-'; const n = Number(v); return Number.isFinite(n) ? `${Math.round(n * 100)}%` : String(v); }
+    function pctWhole(v) { if (missing(v)) return '-'; return `${Math.round(Number(v))}%`; }
+    function scoreText(v) { if (missing(v)) return '-'; return `${Math.round(Number(v))}`; }
+    function num(v) { if (missing(v)) return '-'; const n = Number(v); return Number.isFinite(n) ? n.toFixed(Math.abs(n) < 1 ? 3 : 1).replace(/\.0$/, '') : String(v); }
+    function numberText(v) { if (missing(v)) return '-'; const n = Number(v); return Number.isFinite(n) ? n.toFixed(2).replace(/\.00$/, '') : String(v); }
+    function compactSymbol(v) { return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+    function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#039;'}[c])); }
+
+    refreshDashboard(false);
+    setInterval(() => refreshDashboard(false), 15000);
+  </script>
+</body>
+</html>
