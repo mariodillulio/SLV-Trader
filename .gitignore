@@ -1,0 +1,8 @@
+.DS_Store
+node_modules/
+.env
+local_app/data/state.local.json
+local_app/data/*.bak
+*.log
+set-tastytrade-password.command
+set-tastytrade-refresh-token.command
